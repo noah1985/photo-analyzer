@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -212,7 +213,15 @@ def _match_trigger_terms(caption: str, definition: TagDefinition) -> bool:
     text = caption.lower()
     if not text or not definition.trigger_terms:
         return False
-    return any(term in text for term in definition.trigger_terms)
+    normalized = re.sub(r"[^a-z0-9]+", " ", text).strip()
+    padded = f" {normalized} "
+    for term in definition.trigger_terms:
+        normalized_term = re.sub(r"[^a-z0-9]+", " ", term.lower()).strip()
+        if not normalized_term:
+            continue
+        if f" {normalized_term} " in padded:
+            return True
+    return False
 
 
 def _match_metric_rules(metrics: ImageMetrics, aspect_ratio: float, definition: TagDefinition) -> bool:
@@ -305,6 +314,76 @@ def _flatten_tag_groups(tag_groups: Dict[str, List[str]]) -> List[str]:
     return tags
 
 
+def _insert_front(values: List[str], label: str) -> List[str]:
+    remaining = [item for item in values if item != label]
+    return [label, *remaining]
+
+
+def _remove_labels(values: List[str], labels: set[str]) -> List[str]:
+    return [item for item in values if item not in labels]
+
+
+def _refine_tag_groups(
+    caption: str,
+    metrics: ImageMetrics,
+    orientation: str,
+    tag_groups: Dict[str, List[str]],
+) -> Dict[str, List[str]]:
+    text = re.sub(r"[^a-z0-9]+", " ", caption.lower()).strip()
+    tokens = set(text.split())
+    padded = f" {text} " if text else ""
+
+    def has_phrase(*phrases: str) -> bool:
+        for phrase in phrases:
+            normalized = re.sub(r"[^a-z0-9]+", " ", phrase.lower()).strip()
+            if normalized and f" {normalized} " in padded:
+                return True
+        return False
+
+    refined = {group: list(values) for group, values in tag_groups.items()}
+
+    has_person = bool(tokens & {"woman", "man", "girl", "boy", "person", "people", "face", "portrait"})
+    single_person = has_phrase("a woman", "a man", "single person", "solo portrait", "one person")
+    has_flower = bool(tokens & {"flower", "flowers", "blossom", "rose", "tulip"})
+    has_drink = bool(tokens & {"coffee", "tea", "wine", "drink", "cup", "glass", "bottle"})
+    has_sports = bool(tokens & {"sports", "sport", "runner", "running", "racing", "race", "swimmer", "swimming"})
+    has_helmet_action = ("helmet" in tokens) and bool(tokens & {"riding", "kart", "motorcycle", "bike", "cycling"})
+    has_indoor_hint = bool(tokens & {"indoors", "indoor", "room", "floor", "mirror", "cabinet", "dresser", "table", "chair"})
+    has_black_white = has_phrase("black and white", "monochrome", "grayscale") or metrics.saturation < 8
+
+    if has_person:
+        refined["subject_content"] = _insert_front(refined["subject_content"], "人像")
+        if single_person:
+            refined["subject_content"] = _insert_front(refined["subject_content"], "单人肖像")
+        refined["subject_content"] = _remove_labels(refined["subject_content"], {"野生动物"})
+        if not has_drink:
+            refined["subject_content"] = _remove_labels(refined["subject_content"], {"饮品"})
+        if "camera" in tokens and not has_drink:
+            refined["subject_content"] = _remove_labels(refined["subject_content"], {"静物"})
+        if has_indoor_hint:
+            refined["scene_lighting"] = _insert_front(refined["scene_lighting"], "室内")
+        if has_flower and not single_person:
+            refined["subject_content"] = _insert_front(refined["subject_content"], "花卉")
+        if orientation == "竖图":
+            refined["composition_distance"] = _insert_front(refined["composition_distance"], "竖幅构图")
+        if bool(tokens & {"face", "eye", "eyes"}) or has_phrase("close up", "close up portrait", "headshot"):
+            refined["composition_distance"] = _insert_front(refined["composition_distance"], "特写")
+        else:
+            refined["composition_distance"] = _insert_front(refined["composition_distance"], "近景")
+
+    if has_sports or has_helmet_action:
+        refined["subject_content"] = _insert_front(refined["subject_content"], "运动")
+        refined["composition_distance"] = _insert_front(refined["composition_distance"], "动态构图")
+
+    if has_black_white:
+        refined["style_impression"] = _insert_front(refined["style_impression"], "黑白倾向")
+
+    for group_name in TAG_GROUP_ORDER:
+        refined[group_name] = refined[group_name][:2]
+
+    return refined
+
+
 def _build_summary(
     orientation: str,
     caption: str,
@@ -378,6 +457,7 @@ def analyze_image(image_path: str, *, model_key: str | None = None) -> AnalysisR
         model_initialization_seconds = consume_last_model_init_seconds(model_spec.key)
 
     tag_groups = _select_tag_groups(caption, metrics, aspect_ratio, definitions)
+    tag_groups = _refine_tag_groups(caption, metrics, orientation, tag_groups)
     tags = _flatten_tag_groups(tag_groups)
     summary = _build_summary(orientation, caption, tag_groups)
 

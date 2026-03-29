@@ -33,6 +33,9 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertTrue(definitions)
         self.assertEqual({item.group for item in definitions}, set(TAG_GROUP_ORDER))
         self.assertTrue(any(item.label == "人像" for item in definitions))
+        self.assertTrue(any(item.label == "单人肖像" for item in definitions))
+        self.assertTrue(any(item.label == "蓝调时刻" for item in definitions))
+        self.assertTrue(any(item.label == "黑白倾向" for item in definitions))
 
     def test_missing_file_raises_error(self) -> None:
         with self.assertRaises(AnalysisError):
@@ -49,7 +52,7 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertEqual(result.caption, "a warm portrait photo indoors")
         self.assertIn("人像", result.tag_groups["subject_content"])
         self.assertIn("室内", result.tag_groups["scene_lighting"])
-        self.assertIn("暖色调", result.tag_groups["style_impression"])
+        self.assertIn("暖调风格", result.tag_groups["style_impression"])
         self.assertLessEqual(len(result.tag_groups["subject_content"]), 2)
         self.assertLessEqual(len(result.tag_groups["scene_lighting"]), 2)
         self.assertEqual(result.metrics.temperature, "偏暖")
@@ -64,7 +67,7 @@ class PhotoAnalyzerTests(unittest.TestCase):
 
         self.assertEqual(result.caption, "")
         self.assertTrue(result.tag_groups["scene_lighting"])
-        self.assertIn("低光", result.tag_groups["scene_lighting"])
+        self.assertIn("低光环境", result.tag_groups["scene_lighting"])
         self.assertTrue(result.errors)
 
     @patch(
@@ -79,8 +82,35 @@ class PhotoAnalyzerTests(unittest.TestCase):
 
         for group_name in TAG_GROUP_ORDER:
             self.assertLessEqual(len(result.tag_groups[group_name]), 2)
-        self.assertIn("夜景", result.tag_groups["scene_lighting"])
+        self.assertIn("夜间场景", result.tag_groups["scene_lighting"])
         self.assertIn("特写", result.tag_groups["composition_distance"])
+
+    @patch(
+        "photo_analyzer.core.generate_caption",
+        return_value="a black and white portrait of a runner in motion",
+    )
+    def test_analyze_image_detects_black_white_and_sports(self, _mock_caption: object) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "x.png"
+            Image.new("RGB", (100, 140), (96, 96, 96)).save(path)
+            result = analyze_image(str(path))
+
+        self.assertIn("运动", result.tag_groups["subject_content"])
+        self.assertIn("动态构图", result.tag_groups["composition_distance"])
+        self.assertIn("黑白倾向", result.tag_groups["style_impression"])
+
+    @patch(
+        "photo_analyzer.core.generate_caption",
+        return_value="a man in sunglasses holding a camera",
+    )
+    def test_trigger_matching_avoids_substring_false_positive(self, _mock_caption: object) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "x.png"
+            Image.new("RGB", (120, 160), (90, 90, 90)).save(path)
+            result = analyze_image(str(path))
+
+        self.assertIn("人像", result.tag_groups["subject_content"])
+        self.assertNotIn("饮品", result.tag_groups["subject_content"])
 
     def test_missing_taxonomy_raises_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -259,6 +289,7 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertIn("题材 / 内容", completed.stdout)
         self.assertIn("场景 / 光线", completed.stdout)
         self.assertIn("分析信息", completed.stdout)
+        self.assertNotIn("横幅感", completed.stdout)
         self.assertNotIn("CLIP", completed.stdout)
 
     def test_cli_version_flag(self) -> None:

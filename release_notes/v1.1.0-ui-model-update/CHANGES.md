@@ -41,6 +41,18 @@
 - **Python**：`captioning` 冷启动时把 `import torch` / `transformers` 与 `pipeline(...)` 放在同一段初始化计时内；新增 `preload_caption_pipeline` 供流式入口预加载。
 - **App**：解析 `model_loading` / `model_ready`；加载阶段展示「正在加载本地模型……」，就绪后写入顶部汇总用的初始化秒数；首张 `progress` 仅在预加载之后发出。若连接旧版 CLI，仍可从首张带非零 `model_initialization_seconds` 的结果回填。
 
+6. 真实样本纠偏（本次追加）
+- 针对真实照片误判新增一层轻量纠偏：
+  - 人物主体优先回拉到 `人像 / 单人肖像`
+  - `woman / man / girl / boy` 等基础人物词重新纳入主触发词
+  - 压低 `野生动物 / 饮品 / 静物` 盖过人物主体的情况
+  - `helmet + kart / riding / racing` 这类组合优先推 `运动`
+  - 黑白人物图优先补 `黑白倾向`
+- 触发词匹配从“任意子串命中”改为“词边界命中”：
+  - 避免 `sunglasses` 误命中 `glass`
+  - 避免类似 `animal` 这样的宽泛词把人物图打成 `野生动物`
+- taxonomy 继续扩充为更完整的摄影标签词表，便于后续基于真实样本继续收规则。
+
 验证情况：
 
 - `python3 -m unittest discover -s tests -v`

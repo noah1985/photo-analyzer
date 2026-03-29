@@ -123,6 +123,36 @@ private struct ToolbarArea: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(LightTheme.textPrimary)
             }
+
+            if state.isAnalyzing, let percent = state.downloadProgressPercent {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(
+                        state.downloadStatusText.isEmpty
+                            ? String(format: "模型下载 %.1f%%", percent)
+                            : String(format: "%@ %.1f%%", state.downloadStatusText, percent)
+                    )
+                    .font(.system(size: 11))
+                    .foregroundStyle(LightTheme.textMuted)
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(LightTheme.progressTrack)
+                            Capsule()
+                                .fill(LightTheme.accentGreen)
+                                .frame(width: max(0, geo.size.width * (percent / 100.0)))
+                        }
+                    }
+                    .frame(height: 6)
+
+                    if let eta = state.downloadEtaSeconds {
+                        Text(String(format: "预计还需 %.0f 秒", eta))
+                            .font(.system(size: 11))
+                            .foregroundStyle(LightTheme.textMuted)
+                    }
+                }
+                .frame(maxWidth: 280)
+            }
         }
         .padding(.horizontal, GalleryFixedLayout.horizontalPadding)
         .padding(.top, 16)
@@ -239,20 +269,17 @@ private struct AnalyzingStatusBanner: View {
 
 private struct ErrorPill: View {
     let message: String
-    @State private var expanded = false
+    @State private var showingPopover = false
 
     var body: some View {
         Button {
-            expanded.toggle()
+            showingPopover = true
         } label: {
-            HStack(alignment: .top, spacing: 4) {
+            HStack(spacing: 4) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 10))
-                Text(expanded ? message : "出错")
+                Text("出错")
                     .font(.system(size: 11, weight: .medium))
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(expanded ? nil : 1)
-                    .fixedSize(horizontal: false, vertical: expanded)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
@@ -260,6 +287,33 @@ private struct ErrorPill: View {
             .foregroundStyle(Color(red: 0.75, green: 0.2, blue: 0.18))
         }
         .buttonStyle(.plain)
+        .popover(isPresented: $showingPopover, arrowEdge: .top) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("错误详情")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(LightTheme.textPrimary)
+
+                ScrollView {
+                    Text(message)
+                        .font(.system(size: 12))
+                        .foregroundStyle(LightTheme.textPrimary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(minHeight: 90, maxHeight: 220)
+
+                HStack {
+                    Spacer()
+                    Button("关闭") {
+                        showingPopover = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(LightTheme.accentGreen)
+                }
+            }
+            .padding(16)
+            .frame(width: 360)
+        }
     }
 }
 

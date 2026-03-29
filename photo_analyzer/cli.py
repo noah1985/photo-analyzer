@@ -220,7 +220,10 @@ def _run_analyze_dir_stream(
     _emit({"type": "model_loading", "caption_model": model_key})
     init_sec = 0.0
     try:
-        init_sec = preload_caption_pipeline(model_key)
+        init_sec = preload_caption_pipeline(
+            model_key,
+            progress_callback=lambda payload: _emit({"type": "model_download_progress", **payload}),
+        )
     except Exception:  # pragma: no cover - 预加载失败时首张 analyze 仍会重试
         init_sec = 0.0
     _emit({"type": "model_ready", "model_initialization_seconds": init_sec})

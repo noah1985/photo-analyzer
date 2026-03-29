@@ -460,6 +460,10 @@ def _build_summary(
     return sentence
 
 
+def _labels_for_group(definitions: List[TagDefinition], group_name: str) -> list[str]:
+    return [definition.label for definition in definitions if definition.group == group_name and definition.enabled]
+
+
 def analyze_image(image_path: str, *, model_key: str | None = None) -> AnalysisResult:
     started_at = time.perf_counter()
     path = Path(image_path).expanduser().resolve()
@@ -498,14 +502,21 @@ def analyze_image(image_path: str, *, model_key: str | None = None) -> AnalysisR
     errors: List[str] = []
     caption = ""
     model_initialization_seconds = 0.0
+    tag_groups = {group: [] for group in TAG_GROUP_ORDER}
     try:
         caption = generate_caption(str(path), model_spec.key)
+        tag_groups = _select_tag_groups(caption, metrics, aspect_ratio, definitions)
     except (CaptioningError, RuntimeError) as exc:
         errors.append(str(exc))
+        tag_groups = _select_tag_groups(caption, metrics, aspect_ratio, definitions)
     finally:
         model_initialization_seconds = consume_last_model_init_seconds(model_spec.key)
 
-    tag_groups = _select_tag_groups(caption, metrics, aspect_ratio, definitions)
+    metric_tag_groups = _select_tag_groups("", metrics, aspect_ratio, definitions)
+    for group_name in TAG_GROUP_ORDER:
+        for label in metric_tag_groups[group_name]:
+            if label not in tag_groups[group_name]:
+                tag_groups[group_name].append(label)
     tag_groups = _refine_tag_groups(caption, metrics, orientation, tag_groups)
     tags = _flatten_tag_groups(tag_groups)
     summary = _build_summary(orientation, caption, tag_groups)

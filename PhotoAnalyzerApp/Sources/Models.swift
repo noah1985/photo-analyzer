@@ -87,6 +87,21 @@ struct StreamModelReady: Codable {
     }
 }
 
+struct StreamModelDownloadProgress: Codable {
+    let type: String
+    let phase: String
+    let status: String
+    let current: Double?
+    let total: Double?
+    let percent: Double?
+    let etaSeconds: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case type, phase, status, current, total, percent
+        case etaSeconds = "eta_seconds"
+    }
+}
+
 struct StreamResult: Codable {
     let type: String
     let index: Int

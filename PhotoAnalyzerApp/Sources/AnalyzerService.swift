@@ -28,6 +28,7 @@ enum StreamEvent {
     case start(total: Int, files: [StreamFileRef])
     /// 流式分析在逐张 progress 之前预加载 caption pipeline
     case modelLoading
+    case modelDownloadProgress(status: String, percent: Double?, etaSeconds: Double?)
     case modelReady(modelInitializationSeconds: Double)
     /// 开始处理某一文件前发出（模型推理耗时期间界面可显示文件名）
     case progress(index: Int, fileName: String, filePath: String)
@@ -57,6 +58,12 @@ final class AnalyzerService {
             title: "细节",
             capability: "描述更开放，细节词更多，但有时更发散。",
             speed: "CPU 下通常 4-9 秒/张。"
+        ),
+        CaptionModelOption(
+            id: "photo",
+            title: "摄影",
+            capability: "摄影语义优先，主体、场景、构图和风格判断更准。",
+            speed: "CPU 下通常 4-12 秒/张。"
         ),
     ]
 
@@ -262,6 +269,10 @@ final class AnalyzerService {
         case "model_loading":
             if (try? decoder.decode(StreamModelLoading.self, from: data)) != nil {
                 onEvent(.modelLoading)
+            }
+        case "model_download_progress":
+            if let obj = try? decoder.decode(StreamModelDownloadProgress.self, from: data) {
+                onEvent(.modelDownloadProgress(status: obj.status, percent: obj.percent, etaSeconds: obj.etaSeconds))
             }
         case "model_ready":
             if let obj = try? decoder.decode(StreamModelReady.self, from: data) {

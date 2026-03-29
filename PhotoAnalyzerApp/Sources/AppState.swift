@@ -14,6 +14,9 @@ final class AppState: ObservableObject {
     @Published var totalImages: Int = 0
     @Published var completedImages: Int = 0
     @Published var currentFileName: String = ""
+    @Published var downloadProgressPercent: Double?
+    @Published var downloadEtaSeconds: Double?
+    @Published var downloadStatusText: String = ""
     @Published var modelInitializationSeconds: Double = 0
     @Published var totalAnalysisSeconds: Double = 0
 
@@ -87,6 +90,9 @@ final class AppState: ObservableObject {
         totalImages = 0
         completedImages = 0
         currentFileName = ""
+        downloadProgressPercent = nil
+        downloadEtaSeconds = nil
+        downloadStatusText = ""
         modelInitializationSeconds = 0
         totalAnalysisSeconds = 0
         statusMessage = "正在启动分析……"
@@ -130,9 +136,26 @@ final class AppState: ObservableObject {
             currentFileName = ""
             statusMessage = "正在加载本地模型……"
 
+        case .modelDownloadProgress(let status, let percent, let etaSeconds):
+            downloadStatusText = status
+            downloadProgressPercent = percent
+            downloadEtaSeconds = etaSeconds
+            if let percent {
+                if let etaSeconds {
+                    statusMessage = String(format: "正在下载模型 %.1f%%，预计还需 %.0f 秒", percent, etaSeconds)
+                } else {
+                    statusMessage = String(format: "正在下载模型 %.1f%%", percent)
+                }
+            } else {
+                statusMessage = "正在下载模型文件……"
+            }
+
         case .modelReady(let initSec):
             modelInitializationSeconds = initSec
             currentFileName = ""
+            downloadProgressPercent = nil
+            downloadEtaSeconds = nil
+            downloadStatusText = ""
             if totalImages > 0 {
                 statusMessage = initSec > 0
                     ? String(format: "模型已就绪（初始化 %.2f 秒），开始逐张分析……", initSec)

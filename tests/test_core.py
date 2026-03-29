@@ -7,8 +7,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from huggingface_hub.errors import LocalEntryNotFoundError
 from PIL import Image
 
+from photo_analyzer.captioning import MODEL_SPECS, _ensure_model_downloaded, available_caption_models
 from photo_analyzer.cli import build_gallery_item, format_result
 from photo_analyzer.core import (
     ANALYSIS_VERSION,
@@ -36,6 +38,33 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertTrue(any(item.label == "单人肖像" for item in definitions))
         self.assertTrue(any(item.label == "蓝调时刻" for item in definitions))
         self.assertTrue(any(item.label == "黑白倾向" for item in definitions))
+
+    def test_photo_model_preset_exists(self) -> None:
+        self.assertIn("photo", [item.key for item in available_caption_models()])
+
+    @patch("huggingface_hub.snapshot_download")
+    def test_model_download_uses_local_cache_when_available(self, mock_snapshot_download: object) -> None:
+        mock_snapshot_download.return_value = "/tmp/hf-cache/model"
+
+        path = _ensure_model_downloaded(MODEL_SPECS["balanced"])
+
+        self.assertEqual(path, "/tmp/hf-cache/model")
+        mock_snapshot_download.assert_called_once_with(
+            repo_id=MODEL_SPECS["balanced"].model_id,
+            local_files_only=True,
+        )
+
+    @patch("huggingface_hub.snapshot_download")
+    def test_model_download_falls_back_to_remote_when_cache_missing(self, mock_snapshot_download: object) -> None:
+        mock_snapshot_download.side_effect = [
+            LocalEntryNotFoundError("missing"),
+            "/tmp/hf-cache/model",
+        ]
+
+        path = _ensure_model_downloaded(MODEL_SPECS["balanced"])
+
+        self.assertEqual(path, "/tmp/hf-cache/model")
+        self.assertEqual(mock_snapshot_download.call_count, 2)
 
     def test_missing_file_raises_error(self) -> None:
         with self.assertRaises(AnalysisError):
@@ -112,6 +141,23 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertIn("人像", result.tag_groups["subject_content"])
         self.assertNotIn("饮品", result.tag_groups["subject_content"])
 
+    @patch(
+        "photo_analyzer.core.generate_caption",
+        return_value="a documentary portrait at a street stall",
+    )
+    def test_photo_model_uses_caption_mapping(self, _mock_caption: object) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "x.png"
+            Image.new("RGB", (90, 140), (120, 120, 120)).save(path)
+            result = analyze_image(str(path), model_key="photo")
+
+        self.assertEqual(result.caption_model, "photo")
+        self.assertEqual(result.caption, "a documentary portrait at a street stall")
+        self.assertIn("人像", result.tag_groups["subject_content"])
+        self.assertTrue(
+            "街拍人物" in result.tag_groups["subject_content"] or "街拍" in result.tag_groups["subject_content"]
+        )
+
     def test_missing_taxonomy_raises_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "x.png"
@@ -124,7 +170,7 @@ class PhotoAnalyzerTests(unittest.TestCase):
         original = taxonomy_path().read_text(encoding="utf-8")
         payload = json.loads(original)
         for item in payload["categories"]["style_impression"]:
-            if item["label"] == "暖色调":
+            if item["label"] == "暖调风格":
                 item["enabled"] = False
         with tempfile.TemporaryDirectory() as tmpdir:
             custom = Path(tmpdir) / "taxonomy.json"
@@ -134,7 +180,7 @@ class PhotoAnalyzerTests(unittest.TestCase):
                     path = Path(tmpdir) / "x.png"
                     Image.new("RGB", (50, 40), (190, 120, 80)).save(path)
                     result = analyze_image(str(path))
-        self.assertNotIn("暖色调", result.tags)
+        self.assertNotIn("暖调风格", result.tags)
 
     def test_custom_taxonomy_tag_can_be_added(self) -> None:
         original = taxonomy_path().read_text(encoding="utf-8")
@@ -434,6 +480,9 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertIn('GroupedTagSection(title: "题材 / 内容"', content_view_text)
         self.assertIn('Picker("模型"', content_view_text)
         self.assertIn("本次分析", content_view_text)
+        self.assertIn("model_download_progress", Path(
+            __file__).resolve().parents[1].joinpath("PhotoAnalyzerApp", "Sources", "AnalyzerService.swift"
+        ).read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

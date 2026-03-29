@@ -20,9 +20,17 @@
 Python 侧采用“本地图像描述模型 + 轻量视觉特征”的组合：
 
 - 本地图像描述模型：`Salesforce/blip-image-captioning-large`
+- 可选摄影语义增强模型：`HuggingFaceTB/SmolVLM2-2.2B-Instruct`
 - 视觉特征：亮度、对比度、饱和度、冷暖倾向、清晰度、宽高比
 - 输出结果：基础信息、基础指标、caption、4 组受控标签、中文总结
 - 标签范围来自本地可编辑配置：`photo_analyzer/taxonomy.json`
+
+模型预设：
+
+- `fast`：快速初筛
+- `balanced`：默认平衡
+- `detailed`：自由描述更丰富
+- `photo`：摄影语义优先，更适合人像、纪实、运动、黑白摄影
 
 若本地图像描述模型不可用，CLI 会自动退回纯规则标签，不会整次分析失败。
 

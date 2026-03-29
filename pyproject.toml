@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "photo-analyzer"
+version = "1.0.0"
+description = "Local photo analysis with on-device captioning and lightweight HTML review tools."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "Pillow>=10.0",
+  "torch>=2.1",
+  "transformers>=4.38",
+]
+
+[project.scripts]
+photo-analyzer = "photo_analyzer.cli:main"
+photo-analyzer-app = "photo_analyzer.desktop_app:main"
+
+[tool.setuptools]
+packages = ["photo_analyzer"]
+
+[tool.setuptools.package-data]
+photo_analyzer = ["taxonomy.json"]

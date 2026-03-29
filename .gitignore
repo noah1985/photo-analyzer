@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+PhotoAnalyzerApp/.build/
+PhotoAnalyzerApp/PhotoAnalyzer.app/
+
+tmp_gallery_check/

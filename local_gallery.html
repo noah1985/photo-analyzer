@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Photo Analyzer Local Gallery</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: rgba(255, 250, 241, 0.92);
+      --panel-strong: #fffaf1;
+      --text: #201d18;
+      --muted: #6c6359;
+      --accent: #245046;
+      --warn: #9f5f28;
+      --border: #dccfbd;
+      --tag-bg: #efe4d3;
+      --tag-strong: #dce8e2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(233, 216, 193, 0.9), transparent 30%),
+        radial-gradient(circle at top right, rgba(197, 220, 214, 0.9), transparent 35%),
+        linear-gradient(180deg, #fcf8f2 0%, #f4efe7 55%, #ece4d9 100%);
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(1440px, calc(100vw - 32px));
+      margin: 24px auto 48px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: 0 18px 40px rgba(55, 42, 24, 0.08);
+      backdrop-filter: blur(12px);
+    }
+
+    .header {
+      display: grid;
+      gap: 18px;
+    }
+
+    .title {
+      display: grid;
+      gap: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 44px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+      max-width: 920px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(240px, 1.2fr) minmax(120px, 180px) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .control-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .control-group input {
+      width: 100%;
+      height: 46px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: white;
+      padding: 0 14px;
+      font-size: 15px;
+    }
+
+    button {
+      height: 46px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), #1f6452);
+      color: white;
+      padding: 0 18px;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(36, 80, 70, 0.22);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .status {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .status strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .warn {
+      color: var(--warn);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--panel-strong);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(49, 38, 23, 0.08);
+    }
+
+    .thumb {
+      aspect-ratio: 4 / 3;
+      background: #ddd5c8;
+      overflow: hidden;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .content {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .file-name {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .summary {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--tag-bg);
+      color: #4a4036;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    .tag-primary {
+      background: var(--tag-strong);
+      color: #1a3d32;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 800px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="panel header">
+      <div class="title">
+        <h1>本地照片标签画廊</h1>
+        <p class="lead">这个页面继续保持可直接双击打开，但现在不再自己分析图片，而是读取 Python 产出的 <code>results.json</code>，直接展示同一套标签和总结。</p>
+        <p class="lead">建议先用 CLI 运行 <code>photo-analyzer sample-gallery ...</code> 生成结果，再在这个页面选择包含该 <code>results.json</code> 的目录。页面会按你输入的数量随机展示其中的条目。</p>
+      </div>
+      <div class="controls">
+        <div class="control-group">
+          <label for="results-button">选择结果目录</label>
+          <button id="results-button" type="button">选择结果目录</button>
+        </div>
+        <div class="control-group">
+          <label for="count-input">测试照片数（最大 100）</label>
+          <input id="count-input" type="number" min="1" max="100" value="100">
+        </div>
+        <button id="run-button" type="button">开始展示结果</button>
+      </div>
+      <div id="status" class="status">
+        <div>等待选择结果目录。</div>
+      </div>
+    </section>
+    <section class="panel">
+      <div id="gallery" class="gallery"></div>
+      <div id="empty" class="empty">结果会显示在这里。</div>
+    </section>
+  </main>
+
+  <script>
+    const resultsButton = document.getElementById("results-button");
+    const countInput = document.getElementById("count-input");
+    const runButton = document.getElementById("run-button");
+    const status = document.getElementById("status");
+    const gallery = document.getElementById("gallery");
+    const empty = document.getElementById("empty");
+
+    const MAX_SAMPLE_COUNT = 100;
+    let loadedPayload = null;
+    let loadedItems = [];
+    let loadedDirectoryName = "";
+
+    resultsButton.addEventListener("click", async () => {
+      if (!window.showDirectoryPicker) {
+        setStatus("当前浏览器不支持本地目录选择 API。请使用较新的 Chrome / Edge 打开这个 HTML。", true);
+        return;
+      }
+
+      try {
+        const directoryHandle = await window.showDirectoryPicker();
+        const resultsHandle = await directoryHandle.getFileHandle("results.json");
+        const file = await resultsHandle.getFile();
+        const payload = JSON.parse(await file.text());
+        const items = Array.isArray(payload.items) ? payload.items : [];
+
+        loadedPayload = payload;
+        loadedItems = items;
+        loadedDirectoryName = directoryHandle.name || "";
+        gallery.innerHTML = "";
+        empty.style.display = "block";
+        empty.textContent = "结果会显示在这里。";
+
+        if (!loadedItems.length) {
+          setStatus("这个 results.json 里没有可展示的条目。", true);
+          return;
+        }
+
+        const requestedCount = sanitizeCount(countInput.value, loadedItems.length);
+        countInput.value = String(requestedCount);
+        setStatus(
+          `已加载目录 <strong>${escapeHtml(loadedDirectoryName || "未命名目录")}</strong> 中的 <code>results.json</code>，共 <strong>${loadedItems.length}</strong> 条结果。点击按钮后会按右侧数量随机展示。`
+        );
+      } catch (error) {
+        if (error && error.name === "AbortError") {
+          setStatus("已取消选择结果目录。");
+          return;
+        }
+        console.error(error);
+        setStatus(`读取结果目录失败：${error instanceof Error ? error.message : String(error)}`, true);
+      }
+    });
+
+    runButton.addEventListener("click", async () => {
+      if (!loadedItems.length) {
+        setStatus("请先选择一个包含 Python 结果文件 results.json 的目录。", true);
+        return;
+      }
+
+      const requestedCount = sanitizeCount(countInput.value, loadedItems.length);
+      countInput.value = String(requestedCount);
+      const selected = sampleItems(loadedItems, requestedCount);
+
+      setStatus(
+        `已从 <strong>${escapeHtml(loadedDirectoryName || "未命名目录")}</strong> 中随机选出 <strong>${selected.length}</strong> 条结果，正在展示。`
+      );
+      renderGallery(selected);
+    });
+
+    function setStatus(message, isWarning = false) {
+      status.innerHTML = "";
+      const line = document.createElement("div");
+      line.innerHTML = message;
+      if (isWarning) line.classList.add("warn");
+      status.appendChild(line);
+    }
+
+    function sanitizeCount(rawValue, availableCount) {
+      const parsed = Number.parseInt(rawValue, 10);
+      if (!Number.isFinite(parsed)) return Math.min(MAX_SAMPLE_COUNT, availableCount);
+      return Math.max(1, Math.min(MAX_SAMPLE_COUNT, Math.min(parsed, availableCount)));
+    }
+
+    function sampleItems(items, count) {
+      if (items.length <= count) {
+        return [...items];
+      }
+      const pool = [...items];
+      for (let index = pool.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+      }
+      return pool.slice(0, count);
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function toImageSrc(filePath) {
+      if (!filePath) return "";
+      if (String(filePath).startsWith("file://")) return filePath;
+      return encodeURI(`file://${filePath}`);
+    }
+
+    function renderGallery(results) {
+      gallery.innerHTML = "";
+      if (!results.length) {
+        empty.style.display = "block";
+        empty.textContent = "没有可展示的结果。";
+        return;
+      }
+
+      empty.style.display = "none";
+      for (const item of results) {
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const thumb = document.createElement("div");
+        thumb.className = "thumb";
+        const image = document.createElement("img");
+        image.src = toImageSrc(item.file_path);
+        image.alt = item.file_name || "photo";
+        thumb.appendChild(image);
+
+        const content = document.createElement("div");
+        content.className = "content";
+
+        const fileName = document.createElement("div");
+        fileName.className = "file-name";
+        fileName.textContent = item.file_name || "未命名图片";
+        content.appendChild(fileName);
+
+        if (item.summary) {
+          const summary = document.createElement("div");
+          summary.className = "summary";
+          summary.textContent = item.summary;
+          content.appendChild(summary);
+        }
+
+        const row = document.createElement("div");
+        row.className = "tags";
+        const tags = Array.isArray(item.tags) && item.tags.length ? item.tags : ["无描述标签"];
+        tags.forEach((tagText, index) => {
+          const tag = document.createElement("span");
+          tag.className = index === 0 ? "tag tag-primary" : "tag";
+          tag.textContent = tagText;
+          row.appendChild(tag);
+        });
+        content.appendChild(row);
+
+        card.appendChild(thumb);
+        card.appendChild(content);
+        gallery.appendChild(card);
+      }
+    }
+  </script>
+</body>
+</html>

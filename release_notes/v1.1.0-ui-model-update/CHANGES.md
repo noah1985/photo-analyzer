@@ -53,9 +53,30 @@
   - 避免类似 `animal` 这样的宽泛词把人物图打成 `野生动物`
 - taxonomy 继续扩充为更完整的摄影标签词表，便于后续基于真实样本继续收规则。
 
+7. 人物分类情境感知优化（本次追加）
+- **问题**：`_refine_tag_groups` 检测到人物后无条件插入"人像"标签，导致弹钢琴、街拍路人、活动现场等照片全部归为人像。同时 `has_person` 缺少复数形式（girls / boys / women / men / children 等），很多含人物的照片检测不到人。
+- **taxonomy.json 变更**：
+  - 新增 `music_performance`（演奏）标签，trigger_terms 覆盖 piano / guitar / violin 等常见乐器词。
+  - `portrait` 的 trigger_terms 收窄为 portrait / headshot / face / posing 等明确肖像词，不再包含泛化的 woman / man / girl / boy。
+  - `children` 的 trigger_terms 补齐复数形式（girls / boys / kids / babies / toddlers）及 "young girl" 等短语。
+  - `couple_portrait` / `group_portrait` 补充复数短语。
+  - `event_scene` 补充 performing / stage / recital / show。
+- **`_refine_tag_groups` 重构**：
+  - `has_person` token 集合从 8 个扩展到 24 个（加入所有常见复数、child/kid/baby/dancer/singer/player 等），并用短语检测兜底。
+  - 新增 `has_music`（乐器词 + 演奏短语）、`has_performance`（舞台/表演）、`is_portrait_like`（肖像特征短语或单人+无活动）、`is_street_context`、`is_child` 等情境信号。
+  - 人物分类改为情境分流：
+    - 有音乐信号 → 插入「演奏」
+    - 有表演信号 → 插入「活动现场」
+    - 街头 + 非肖像 → 插入「街拍」
+    - 肖像特征 → 插入「人像」/「单人肖像」
+    - 以上皆无但有人 → 保底插入「人像」
+  - 儿童检测独立，不依赖肖像判定。
+  - 构图强制（近景/竖幅/特写）仅在肖像情境下执行，非肖像照片不再被强制修改构图标签。
+  - 音乐场景自动追加「室内」场景标签。
+
 验证情况：
 
-- `python3 -m unittest discover -s tests -v`
+- `python3 -m unittest discover -s tests -v`（20 tests OK）
 - `bash PhotoAnalyzerApp/build_app.sh`
 
 本次提交只做本地 commit，不推送远程。

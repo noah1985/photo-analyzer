@@ -342,8 +342,19 @@ def _refine_tag_groups(
 
     refined = {group: list(values) for group, values in tag_groups.items()}
 
-    has_person = bool(tokens & {"woman", "man", "girl", "boy", "person", "people", "face", "portrait"})
-    single_person = has_phrase("a woman", "a man", "single person", "solo portrait", "one person")
+    _PERSON_TOKENS = {
+        "woman", "man", "girl", "boy", "person", "people", "face", "portrait",
+        "women", "men", "girls", "boys", "child", "children", "kid", "kids",
+        "baby", "toddler", "player", "singer", "dancer", "couple",
+    }
+    has_person = bool(tokens & _PERSON_TOKENS) or has_phrase(
+        "young girl", "young boy", "old man", "old woman",
+        "young woman", "young man", "little girl", "little boy",
+    )
+    single_person = has_phrase(
+        "a woman", "a man", "a girl", "a boy", "a child",
+        "single person", "solo portrait", "one person",
+    )
     has_flower = bool(tokens & {"flower", "flowers", "blossom", "rose", "tulip"})
     has_drink = bool(tokens & {"coffee", "tea", "wine", "drink", "cup", "glass", "bottle"})
     has_sports = bool(tokens & {"sports", "sport", "runner", "running", "racing", "race", "swimmer", "swimming"})
@@ -351,25 +362,63 @@ def _refine_tag_groups(
     has_indoor_hint = bool(tokens & {"indoors", "indoor", "room", "floor", "mirror", "cabinet", "dresser", "table", "chair"})
     has_black_white = has_phrase("black and white", "monochrome", "grayscale") or metrics.saturation < 8
 
+    has_music = bool(tokens & {"piano", "guitar", "violin", "cello", "drums", "flute", "trumpet", "saxophone"}) or has_phrase(
+        "playing music", "playing a song", "musical performance", "musician", "pianist", "guitarist",
+    )
+    has_performance = has_phrase(
+        "performance", "performing", "stage", "concert", "recital", "dancing",
+    )
+    has_activity = has_music or has_performance or has_sports or has_helmet_action
+    is_street_context = bool(tokens & {"street", "sidewalk", "crosswalk"}) or has_phrase(
+        "walking down", "walking on", "walking in",
+    )
+    is_portrait_like = (
+        has_phrase("portrait", "posing", "looking at camera", "headshot",
+                   "close up of a", "selfie", "self portrait")
+        or (single_person and not has_activity)
+    )
+    _CHILD_TOKENS = {"child", "children", "kid", "kids", "baby", "toddler"}
+    is_child = bool(tokens & _CHILD_TOKENS) or has_phrase(
+        "young girl", "young boy", "young girls", "young boys",
+        "little girl", "little boy", "little girls", "little boys",
+    )
+
     if has_person:
-        refined["subject_content"] = _insert_front(refined["subject_content"], "人像")
-        if single_person:
-            refined["subject_content"] = _insert_front(refined["subject_content"], "单人肖像")
         refined["subject_content"] = _remove_labels(refined["subject_content"], {"野生动物"})
         if not has_drink:
             refined["subject_content"] = _remove_labels(refined["subject_content"], {"饮品"})
         if "camera" in tokens and not has_drink:
             refined["subject_content"] = _remove_labels(refined["subject_content"], {"静物"})
-        if has_indoor_hint:
+
+        if has_music:
+            refined["subject_content"] = _insert_front(refined["subject_content"], "演奏")
+        elif has_performance:
+            refined["subject_content"] = _insert_front(refined["subject_content"], "活动现场")
+        elif is_street_context and not is_portrait_like:
+            refined["subject_content"] = _insert_front(refined["subject_content"], "街拍")
+        elif is_portrait_like:
+            refined["subject_content"] = _insert_front(refined["subject_content"], "人像")
+            if single_person:
+                refined["subject_content"] = _insert_front(refined["subject_content"], "单人肖像")
+
+        if is_child:
+            refined["subject_content"] = _insert_front(refined["subject_content"], "儿童")
+
+        if not refined["subject_content"]:
+            refined["subject_content"].append("人像")
+
+        if has_indoor_hint or has_music:
             refined["scene_lighting"] = _insert_front(refined["scene_lighting"], "室内")
         if has_flower and not single_person:
             refined["subject_content"] = _insert_front(refined["subject_content"], "花卉")
-        if orientation == "竖图":
-            refined["composition_distance"] = _insert_front(refined["composition_distance"], "竖幅构图")
-        if bool(tokens & {"face", "eye", "eyes"}) or has_phrase("close up", "close up portrait", "headshot"):
-            refined["composition_distance"] = _insert_front(refined["composition_distance"], "特写")
-        else:
-            refined["composition_distance"] = _insert_front(refined["composition_distance"], "近景")
+
+        if is_portrait_like:
+            if orientation == "竖图":
+                refined["composition_distance"] = _insert_front(refined["composition_distance"], "竖幅构图")
+            if bool(tokens & {"face", "eye", "eyes"}) or has_phrase("close up", "close up portrait", "headshot"):
+                refined["composition_distance"] = _insert_front(refined["composition_distance"], "特写")
+            else:
+                refined["composition_distance"] = _insert_front(refined["composition_distance"], "近景")
 
     if has_sports or has_helmet_action:
         refined["subject_content"] = _insert_front(refined["subject_content"], "运动")

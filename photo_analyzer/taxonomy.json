@@ -2,15 +2,15 @@
   "version": 3,
   "categories": {
     "subject_content": [
-      {"id": "portrait", "label": "人像", "group": "subject_content", "enabled": true, "trigger_terms": ["portrait", "person", "face", "woman", "man", "girl", "boy"], "metric_rules": {}, "summary_priority": 10},
-      {"id": "single_portrait", "label": "单人肖像", "group": "subject_content", "enabled": true, "trigger_terms": ["single person", "single portrait", "one person", "solo portrait", "a woman", "a man"], "metric_rules": {}, "summary_priority": 11},
-      {"id": "couple_portrait", "label": "双人合影", "group": "subject_content", "enabled": true, "trigger_terms": ["two people", "couple", "duo portrait", "pair"], "metric_rules": {}, "summary_priority": 12},
-      {"id": "group_portrait", "label": "群像", "group": "subject_content", "enabled": true, "trigger_terms": ["group", "crowd", "family", "team", "friends"], "metric_rules": {}, "summary_priority": 13},
+      {"id": "portrait", "label": "人像", "group": "subject_content", "enabled": true, "trigger_terms": ["portrait", "headshot", "face", "posing", "looking at camera", "close up of a person", "close up of a woman", "close up of a man"], "metric_rules": {}, "summary_priority": 10},
+      {"id": "single_portrait", "label": "单人肖像", "group": "subject_content", "enabled": true, "trigger_terms": ["single person", "single portrait", "one person", "solo portrait", "a woman", "a man", "a girl", "a boy", "a child"], "metric_rules": {}, "summary_priority": 11},
+      {"id": "couple_portrait", "label": "双人合影", "group": "subject_content", "enabled": true, "trigger_terms": ["two people", "couple", "duo portrait", "pair", "two women", "two men", "two girls", "two boys"], "metric_rules": {}, "summary_priority": 12},
+      {"id": "group_portrait", "label": "群像", "group": "subject_content", "enabled": true, "trigger_terms": ["group of people", "crowd", "family", "team", "friends", "families"], "metric_rules": {}, "summary_priority": 13},
       {"id": "selfie", "label": "自拍", "group": "subject_content", "enabled": true, "trigger_terms": ["selfie", "self portrait"], "metric_rules": {}, "summary_priority": 14},
       {"id": "street_people", "label": "街拍人物", "group": "subject_content", "enabled": true, "trigger_terms": ["street portrait", "street person", "street people", "candid person"], "metric_rules": {}, "summary_priority": 15},
       {"id": "street", "label": "街拍", "group": "subject_content", "enabled": true, "trigger_terms": ["street", "candid", "urban", "crosswalk", "sidewalk"], "metric_rules": {}, "summary_priority": 16},
       {"id": "sports", "label": "运动", "group": "subject_content", "enabled": true, "trigger_terms": ["sports", "sport", "soccer", "football", "basketball", "tennis", "baseball", "runner", "running", "skateboard", "cycling", "surfing", "skiing", "jumping", "action shot", "racing", "race", "go kart", "kart", "motorcycle racing", "swimmer", "swimming"], "metric_rules": {}, "summary_priority": 17},
-      {"id": "children", "label": "儿童", "group": "subject_content", "enabled": true, "trigger_terms": ["child", "kid", "children", "boy", "girl", "baby", "toddler"], "metric_rules": {}, "summary_priority": 18},
+      {"id": "children", "label": "儿童", "group": "subject_content", "enabled": true, "trigger_terms": ["child", "kid", "children", "kids", "boy", "boys", "girl", "girls", "baby", "babies", "toddler", "toddlers", "young girl", "young boy", "young girls", "young boys", "little girl", "little boy", "little girls", "little boys"], "metric_rules": {}, "summary_priority": 18},
       {"id": "elder", "label": "老人", "group": "subject_content", "enabled": true, "trigger_terms": ["elderly", "old man", "old woman", "senior"], "metric_rules": {}, "summary_priority": 19},
       {"id": "pet", "label": "宠物", "group": "subject_content", "enabled": true, "trigger_terms": ["pet", "cat", "dog", "kitten", "puppy"], "metric_rules": {}, "summary_priority": 20},
       {"id": "cat", "label": "猫", "group": "subject_content", "enabled": true, "trigger_terms": ["cat", "kitten"], "metric_rules": {}, "summary_priority": 21},
@@ -53,7 +53,8 @@
       {"id": "road", "label": "道路", "group": "subject_content", "enabled": true, "trigger_terms": ["road", "street", "highway"], "metric_rules": {}, "summary_priority": 58},
       {"id": "bridge", "label": "桥梁", "group": "subject_content", "enabled": true, "trigger_terms": ["bridge"], "metric_rules": {}, "summary_priority": 59},
       {"id": "travel_documentary", "label": "旅行纪实", "group": "subject_content", "enabled": true, "trigger_terms": ["travel", "trip", "tourist", "journey"], "metric_rules": {}, "summary_priority": 60},
-      {"id": "event_scene", "label": "活动现场", "group": "subject_content", "enabled": true, "trigger_terms": ["concert", "festival", "event", "ceremony", "performance"], "metric_rules": {}, "summary_priority": 61}
+      {"id": "music_performance", "label": "演奏", "group": "subject_content", "enabled": true, "trigger_terms": ["piano", "guitar", "violin", "cello", "drums", "flute", "trumpet", "saxophone", "instrument", "musician", "pianist", "guitarist", "playing music", "playing a song", "musical performance"], "metric_rules": {}, "summary_priority": 61},
+      {"id": "event_scene", "label": "活动现场", "group": "subject_content", "enabled": true, "trigger_terms": ["concert", "festival", "event", "ceremony", "performance", "performing", "stage", "recital", "show"], "metric_rules": {}, "summary_priority": 62}
     ],
     "scene_lighting": [
       {"id": "indoor", "label": "室内", "group": "scene_lighting", "enabled": true, "trigger_terms": ["indoor", "indoors", "interior", "room"], "metric_rules": {}, "summary_priority": 100},

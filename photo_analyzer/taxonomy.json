@@ -1,52 +1,41 @@
 {
-  "version": 1,
+  "version": 2,
   "categories": {
-    "subject": [
-      {"id": "portrait", "label": "人像", "group": "subject", "enabled": true, "trigger_terms": ["portrait", "person", "man", "woman", "girl", "boy", "selfie", "face"], "metric_rules": {}, "summary_priority": 10},
-      {"id": "group_people", "label": "多人场景", "group": "subject", "enabled": true, "trigger_terms": ["people", "group", "crowd", "family", "friends", "team"], "metric_rules": {}, "summary_priority": 11},
-      {"id": "children", "label": "儿童", "group": "subject", "enabled": true, "trigger_terms": ["child", "children", "kid", "baby", "toddler"], "metric_rules": {}, "summary_priority": 12},
-      {"id": "animal", "label": "动物", "group": "subject", "enabled": true, "trigger_terms": ["cat", "dog", "bird", "animal", "horse", "pet", "wildlife", "deer"], "metric_rules": {}, "summary_priority": 13},
-      {"id": "plants", "label": "花卉植物", "group": "subject", "enabled": true, "trigger_terms": ["flower", "flowers", "plant", "plants", "tree", "leaf", "garden", "grass", "bouquet"], "metric_rules": {}, "summary_priority": 14},
-      {"id": "food", "label": "美食", "group": "subject", "enabled": true, "trigger_terms": ["food", "dish", "meal", "cake", "dessert", "plate", "restaurant", "breakfast", "lunch", "dinner"], "metric_rules": {}, "summary_priority": 15},
-      {"id": "drink", "label": "饮品", "group": "subject", "enabled": true, "trigger_terms": ["coffee", "tea", "drink", "cup", "glass", "wine"], "metric_rules": {}, "summary_priority": 16},
-      {"id": "vehicle", "label": "车辆交通", "group": "subject", "enabled": true, "trigger_terms": ["car", "bus", "truck", "motorcycle", "bicycle", "train", "railway", "subway"], "metric_rules": {}, "summary_priority": 17},
-      {"id": "architecture", "label": "建筑", "group": "subject", "enabled": true, "trigger_terms": ["building", "house", "architecture", "temple", "bridge", "tower", "facade", "church"], "metric_rules": {}, "summary_priority": 18},
-      {"id": "document", "label": "文档内容", "group": "subject", "enabled": true, "trigger_terms": ["document", "screen", "text", "book", "paper", "laptop", "monitor", "display", "phone screen"], "metric_rules": {}, "summary_priority": 19},
-      {"id": "still_life", "label": "静物物件", "group": "subject", "enabled": true, "trigger_terms": ["product", "bottle", "camera", "phone", "object", "vase", "toy", "bag", "watch", "scissors", "tool"], "metric_rules": {}, "summary_priority": 20},
-      {"id": "product_showcase", "label": "商品展示", "group": "subject", "enabled": true, "trigger_terms": ["product photo", "packaging", "brand", "merchandise"], "metric_rules": {}, "summary_priority": 21},
-      {"id": "artwork", "label": "艺术作品", "group": "subject", "enabled": true, "trigger_terms": ["painting", "art", "museum", "gallery", "sculpture", "statue", "illustration"], "metric_rules": {}, "summary_priority": 22},
-      {"id": "landscape", "label": "风景", "group": "subject", "enabled": true, "trigger_terms": ["mountain", "beach", "lake", "river", "forest", "sunset", "landscape", "nature", "sea", "ocean", "waterfall"], "metric_rules": {}, "summary_priority": 23}
+    "subject_content": [
+      {"id": "portrait", "label": "人像", "group": "subject_content", "enabled": true, "trigger_terms": ["portrait", "person", "man", "woman", "girl", "boy", "selfie", "face"], "metric_rules": {}, "summary_priority": 10},
+      {"id": "street", "label": "街拍", "group": "subject_content", "enabled": true, "trigger_terms": ["street", "candid", "crowd", "urban", "sidewalk", "crosswalk"], "metric_rules": {}, "summary_priority": 11},
+      {"id": "landscape", "label": "风光", "group": "subject_content", "enabled": true, "trigger_terms": ["landscape", "mountain", "lake", "river", "forest", "beach", "ocean", "valley", "sky", "cloud"], "metric_rules": {}, "summary_priority": 12},
+      {"id": "architecture", "label": "建筑", "group": "subject_content", "enabled": true, "trigger_terms": ["building", "architecture", "tower", "bridge", "facade", "temple", "church", "staircase", "corridor"], "metric_rules": {}, "summary_priority": 13},
+      {"id": "still_life", "label": "静物", "group": "subject_content", "enabled": true, "trigger_terms": ["still life", "object", "camera", "bottle", "toy", "watch", "vase", "scissors", "tool", "desk"], "metric_rules": {}, "summary_priority": 14},
+      {"id": "food", "label": "食物", "group": "subject_content", "enabled": true, "trigger_terms": ["food", "dish", "meal", "dessert", "cake", "plate", "restaurant", "coffee", "tea", "cup", "bowl"], "metric_rules": {}, "summary_priority": 15},
+      {"id": "pet", "label": "宠物", "group": "subject_content", "enabled": true, "trigger_terms": ["cat", "dog", "pet", "puppy", "kitten", "bird"], "metric_rules": {}, "summary_priority": 16}
     ],
-    "scene": [
-      {"id": "city_street", "label": "城市街景", "group": "scene", "enabled": true, "trigger_terms": ["street", "city", "road", "traffic", "urban", "sidewalk", "intersection"], "metric_rules": {}, "summary_priority": 30},
-      {"id": "city_night", "label": "城市夜景", "group": "scene", "enabled": true, "trigger_terms": ["night street", "night city", "city at night", "urban night"], "metric_rules": {"brightness_lt": 35}, "summary_priority": 31},
-      {"id": "indoor_scene", "label": "室内场景", "group": "scene", "enabled": true, "trigger_terms": ["indoor", "interior", "room", "office", "living room", "hallway"], "metric_rules": {}, "summary_priority": 32},
-      {"id": "indoor_space", "label": "室内空间", "group": "scene", "enabled": true, "trigger_terms": ["kitchen", "bedroom", "workspace"], "metric_rules": {}, "summary_priority": 33},
-      {"id": "outdoor_scene", "label": "室外场景", "group": "scene", "enabled": true, "trigger_terms": ["outdoor", "outside", "park", "field", "yard", "beach", "mountain", "forest"], "metric_rules": {"aspect_ratio_gt": 1.45}, "summary_priority": 34},
-      {"id": "night_scene", "label": "夜景", "group": "scene", "enabled": true, "trigger_terms": ["night", "evening", "dark"], "metric_rules": {"brightness_lt": 32}, "summary_priority": 35},
-      {"id": "travel", "label": "旅行记录", "group": "scene", "enabled": true, "trigger_terms": ["travel", "tourist", "vacation", "trip"], "metric_rules": {}, "summary_priority": 36},
-      {"id": "sky", "label": "天空云彩", "group": "scene", "enabled": true, "trigger_terms": ["sky", "cloud", "clouds", "sunrise", "sunset"], "metric_rules": {"brightness_gt": 55}, "summary_priority": 37},
-      {"id": "home_decor", "label": "家居陈设", "group": "scene", "enabled": true, "trigger_terms": ["table", "chair", "sofa", "lamp", "shelf", "desk", "furniture"], "metric_rules": {}, "summary_priority": 38}
+    "scene_lighting": [
+      {"id": "indoor", "label": "室内", "group": "scene_lighting", "enabled": true, "trigger_terms": ["indoor", "interior", "room", "kitchen", "bedroom", "office", "table", "desk"], "metric_rules": {}, "summary_priority": 20},
+      {"id": "outdoor", "label": "室外", "group": "scene_lighting", "enabled": true, "trigger_terms": ["outdoor", "outside", "park", "field", "yard", "garden", "street", "beach", "mountain"], "metric_rules": {"aspect_ratio_gt": 1.6}, "summary_priority": 21},
+      {"id": "night", "label": "夜景", "group": "scene_lighting", "enabled": true, "trigger_terms": ["night", "evening", "nighttime"], "metric_rules": {"brightness_lt": 28}, "summary_priority": 22},
+      {"id": "sunset", "label": "日落", "group": "scene_lighting", "enabled": true, "trigger_terms": ["sunset", "golden hour", "sunrise"], "metric_rules": {}, "summary_priority": 23},
+      {"id": "backlit", "label": "逆光", "group": "scene_lighting", "enabled": true, "trigger_terms": ["backlit", "backlight", "silhouette"], "metric_rules": {"brightness_gt": 55, "contrast_gt": 18}, "summary_priority": 24},
+      {"id": "low_light", "label": "低光", "group": "scene_lighting", "enabled": true, "trigger_terms": ["dim", "low light"], "metric_rules": {"brightness_lt": 24}, "summary_priority": 25},
+      {"id": "rainy", "label": "雨天", "group": "scene_lighting", "enabled": true, "trigger_terms": ["rain", "rainy", "wet", "umbrella"], "metric_rules": {}, "summary_priority": 26}
     ],
-    "style": [
-      {"id": "low_light", "label": "低光", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"brightness_lt": 28}, "summary_priority": 50},
-      {"id": "bright", "label": "高亮", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"brightness_gt": 72}, "summary_priority": 51},
-      {"id": "rich_color", "label": "颜色丰富", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"saturation_gt": 46}, "summary_priority": 52},
-      {"id": "muted_color", "label": "色彩克制", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"saturation_lt": 18}, "summary_priority": 53},
-      {"id": "warm_tone", "label": "偏暖", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"temperature": "偏暖"}, "summary_priority": 54},
-      {"id": "cool_tone", "label": "偏冷", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"temperature": "偏冷"}, "summary_priority": 55},
-      {"id": "high_contrast", "label": "高对比", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"contrast_gt": 24}, "summary_priority": 56},
-      {"id": "low_contrast", "label": "低对比", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"contrast_lt": 8}, "summary_priority": 57},
-      {"id": "soft_focus", "label": "柔和虚化", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"sharpness_lt": 6}, "summary_priority": 58},
-      {"id": "sharp_detail", "label": "细节清晰", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"sharpness_gt": 18}, "summary_priority": 59},
-      {"id": "wide_scene", "label": "宽幅场景感", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"aspect_ratio_gt": 1.55}, "summary_priority": 60},
-      {"id": "vertical_subject", "label": "竖幅主体感", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"aspect_ratio_lt": 0.78}, "summary_priority": 61},
-      {"id": "close_up", "label": "近景特写", "group": "style", "enabled": true, "trigger_terms": ["close up", "close-up", "macro"], "metric_rules": {"sharpness_lt": 6}, "summary_priority": 62},
-      {"id": "night_mood", "label": "夜色氛围", "group": "style", "enabled": true, "trigger_terms": ["night", "evening", "dark"], "metric_rules": {"brightness_lt": 32}, "summary_priority": 63},
-      {"id": "visual_impact", "label": "视觉冲击感", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"saturation_gt": 40, "contrast_gt": 18}, "summary_priority": 64},
-      {"id": "airy", "label": "通透轻淡", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"brightness_gt": 70, "saturation_lt": 22}, "summary_priority": 65},
-      {"id": "warm_mood", "label": "暖调氛围", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"brightness_lt": 35, "temperature": "偏暖"}, "summary_priority": 66},
-      {"id": "cool_mood", "label": "冷调氛围", "group": "style", "enabled": true, "trigger_terms": [], "metric_rules": {"brightness_lt": 35, "temperature": "偏冷"}, "summary_priority": 67}
+    "composition_distance": [
+      {"id": "close_up", "label": "特写", "group": "composition_distance", "enabled": true, "trigger_terms": ["close-up", "close up", "macro", "detail"], "metric_rules": {}, "summary_priority": 30},
+      {"id": "near_view", "label": "近景", "group": "composition_distance", "enabled": true, "trigger_terms": ["portrait", "near", "single subject", "face", "flower"], "metric_rules": {"aspect_ratio_lt": 0.82}, "summary_priority": 31},
+      {"id": "wide_view", "label": "宽景", "group": "composition_distance", "enabled": true, "trigger_terms": ["wide shot", "panorama", "landscape view"], "metric_rules": {"aspect_ratio_gt": 1.5}, "summary_priority": 32},
+      {"id": "wide_frame", "label": "横幅感", "group": "composition_distance", "enabled": true, "trigger_terms": [], "metric_rules": {"aspect_ratio_gt": 1.65}, "summary_priority": 33},
+      {"id": "negative_space", "label": "留白", "group": "composition_distance", "enabled": true, "trigger_terms": ["minimal", "empty background", "negative space"], "metric_rules": {"brightness_gt": 68, "saturation_lt": 22}, "summary_priority": 34},
+      {"id": "centered_subject", "label": "主体居中", "group": "composition_distance", "enabled": true, "trigger_terms": ["centered", "center composition"], "metric_rules": {}, "summary_priority": 35},
+      {"id": "subject_emphasis", "label": "主体突出", "group": "composition_distance", "enabled": true, "trigger_terms": ["focused subject", "main subject", "single subject"], "metric_rules": {"sharpness_gt": 12, "aspect_ratio_lt": 1.3}, "summary_priority": 36}
+    ],
+    "style_impression": [
+      {"id": "cinematic", "label": "电影感", "group": "style_impression", "enabled": true, "trigger_terms": ["cinematic", "movie still"], "metric_rules": {"contrast_gt": 20, "brightness_lt": 55}, "summary_priority": 40},
+      {"id": "cool_tone", "label": "冷色调", "group": "style_impression", "enabled": true, "trigger_terms": [], "metric_rules": {"temperature": "偏冷"}, "summary_priority": 41},
+      {"id": "warm_tone", "label": "暖色调", "group": "style_impression", "enabled": true, "trigger_terms": [], "metric_rules": {"temperature": "偏暖"}, "summary_priority": 42},
+      {"id": "high_contrast", "label": "高对比", "group": "style_impression", "enabled": true, "trigger_terms": [], "metric_rules": {"contrast_gt": 24}, "summary_priority": 43},
+      {"id": "low_saturation", "label": "低饱和", "group": "style_impression", "enabled": true, "trigger_terms": ["muted", "desaturated"], "metric_rules": {"saturation_lt": 18}, "summary_priority": 44},
+      {"id": "documentary", "label": "纪实感", "group": "style_impression", "enabled": true, "trigger_terms": ["documentary", "candid", "street"], "metric_rules": {}, "summary_priority": 45},
+      {"id": "moody", "label": "氛围感", "group": "style_impression", "enabled": true, "trigger_terms": ["moody", "atmospheric"], "metric_rules": {"brightness_lt": 40, "contrast_gt": 10}, "summary_priority": 46}
     ]
   }
 }

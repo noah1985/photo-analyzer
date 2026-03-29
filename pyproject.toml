@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "photo-analyzer"
-version = "1.0.0"
+version = "1.1.0"
 description = "Local photo analysis with on-device captioning and lightweight HTML review tools."
 readme = "README.md"
 requires-python = ">=3.9"

@@ -9,11 +9,20 @@ from pathlib import Path
 from random import Random
 from typing import Iterable
 
-from .core import ANALYSIS_VERSION, AnalysisError, AnalysisResult, analyze_image
+from .captioning import DEFAULT_MODEL_KEY, available_caption_models
+from .core import (
+    ANALYSIS_VERSION,
+    TAG_GROUP_LABELS,
+    TAG_GROUP_ORDER,
+    AnalysisError,
+    AnalysisResult,
+    analyze_image,
+)
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tif"}
 DEFAULT_SAMPLE_COUNT = 100
 DEFAULT_SAMPLE_SEED = 20260421
+CAPTION_MODEL_CHOICES = [spec.key for spec in available_caption_models()]
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,6 +39,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     analyze = subparsers.add_parser("analyze", help="分析单张图片或一个目录中的多张图片")
     analyze.add_argument("image_path", help="图片路径或目录路径")
+    analyze.add_argument(
+        "--model",
+        choices=CAPTION_MODEL_CHOICES,
+        default=DEFAULT_MODEL_KEY,
+        help=f"本地图像描述模型预设，默认 {DEFAULT_MODEL_KEY}",
+    )
 
     sample_gallery = subparsers.add_parser(
         "sample-gallery", help="随机抽样图片并导出静态标签画廊"
@@ -51,6 +66,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--output-dir",
         default="sample_gallery_output",
         help="导出目录，默认 sample_gallery_output",
+    )
+    sample_gallery.add_argument(
+        "--model",
+        choices=CAPTION_MODEL_CHOICES,
+        default=DEFAULT_MODEL_KEY,
+        help=f"本地图像描述模型预设，默认 {DEFAULT_MODEL_KEY}",
     )
 
     analyze_dir = subparsers.add_parser(
@@ -74,6 +95,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="逐张输出 JSONL（每行一个 JSON），供 GUI 实时读取进度",
+    )
+    analyze_dir.add_argument(
+        "--model",
+        choices=CAPTION_MODEL_CHOICES,
+        default=DEFAULT_MODEL_KEY,
+        help=f"本地图像描述模型预设，默认 {DEFAULT_MODEL_KEY}",
     )
 
     subparsers.add_parser("app", help="启动本地桌面标签画廊，无需 web service")
@@ -108,7 +135,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     failures = 0
     for index, target in enumerate(targets):
         try:
-            result = analyze_image(str(target))
+            result = analyze_image(str(target), model_key=args.model)
         except AnalysisError as exc:
             failures += 1
             print(f"[{target.name}] 分析失败：{exc}", file=sys.stderr)
@@ -147,13 +174,13 @@ def run_analyze_dir(args: argparse.Namespace) -> int:
     stream = getattr(args, "stream", False)
 
     if stream:
-        return _run_analyze_dir_stream(chosen, source_dir, args.count, len(targets))
+        return _run_analyze_dir_stream(chosen, source_dir, args.count, len(targets), args.model)
 
     items = []
     failures = []
     for target in chosen:
         try:
-            result = analyze_image(str(target))
+            result = analyze_image(str(target), model_key=args.model)
         except AnalysisError as exc:
             failures.append({"file_name": target.name, "file_path": str(target), "error": str(exc)})
             continue
@@ -164,6 +191,7 @@ def run_analyze_dir(args: argparse.Namespace) -> int:
         "source_directory": str(source_dir),
         "sample_count": len(items),
         "requested_count": min(args.count, len(targets)),
+        "caption_model": args.model,
         "analysis_version": ANALYSIS_VERSION,
         "items": items,
         "failures": failures,
@@ -178,7 +206,7 @@ def _emit(obj: dict[str, object]) -> None:
 
 
 def _run_analyze_dir_stream(
-    chosen: list[Path], source_dir: Path, requested_count: int, available_count: int
+    chosen: list[Path], source_dir: Path, requested_count: int, available_count: int, model_key: str
 ) -> int:
     total = len(chosen)
     _emit({
@@ -199,7 +227,7 @@ def _run_analyze_dir_stream(
             "file_path": str(target),
         })
         try:
-            result = analyze_image(str(target))
+            result = analyze_image(str(target), model_key=model_key)
             item = build_gallery_item(result)
             _emit({"type": "result", "index": index, **item})
             success_count += 1
@@ -243,7 +271,7 @@ def run_sample_gallery(args: argparse.Namespace) -> int:
     failures = []
     for target in chosen:
         try:
-            result = analyze_image(str(target))
+            result = analyze_image(str(target), model_key=args.model)
         except AnalysisError as exc:
             failures.append({"file_name": target.name, "file_path": str(target), "error": str(exc)})
             continue
@@ -254,6 +282,7 @@ def run_sample_gallery(args: argparse.Namespace) -> int:
         "sample_count": len(items),
         "requested_count": min(args.count, len(targets)),
         "seed": args.seed,
+        "caption_model": args.model,
         "generated_at": generated_at,
         "analysis_version": ANALYSIS_VERSION,
         "items": items,
@@ -313,6 +342,11 @@ def build_gallery_item(result: AnalysisResult) -> dict[str, object]:
         "file_path": result.image.path,
         "summary": result.summary,
         "caption": result.caption,
+        "caption_model": result.caption_model,
+        "caption_model_label": result.caption_model_label,
+        "model_initialization_seconds": result.model_initialization_seconds,
+        "analysis_duration_seconds": result.analysis_duration_seconds,
+        "tag_groups": result.tag_groups,
         "tags": result.tags or ["无描述标签"],
     }
 
@@ -320,9 +354,6 @@ def build_gallery_item(result: AnalysisResult) -> dict[str, object]:
 def format_result(result: AnalysisResult) -> str:
     lines = [
         f"总体判断：{result.summary}",
-        "",
-        "描述标签：",
-        f"- {'、'.join(result.tags) if result.tags else '无描述标签'}",
         "",
         "文件信息：",
         f"- 路径：{result.image.path}",
@@ -337,7 +368,17 @@ def format_result(result: AnalysisResult) -> str:
         f"- 饱和度：{result.metrics.saturation}",
         f"- 冷暖倾向：{result.metrics.temperature}",
         f"- 清晰度：{result.metrics.sharpness}",
+        "",
+        "分析信息：",
+        f"- 模型：{result.caption_model_label} ({result.caption_model})",
+        f"- 模型初始化：{result.model_initialization_seconds} 秒",
+        f"- 耗时：{result.analysis_duration_seconds} 秒",
     ]
+    for group_name in TAG_GROUP_ORDER:
+        group_tags = result.tag_groups.get(group_name, [])
+        if not group_tags:
+            continue
+        lines.extend(["", f"{TAG_GROUP_LABELS[group_name]}：", f"- {'、'.join(group_tags)}"])
     if result.caption:
         lines.extend(["", "本地模型描述：", f"- {result.caption}"])
     if result.errors:

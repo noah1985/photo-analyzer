@@ -1,5 +1,33 @@
 import Foundation
 
+struct CaptionModelOption: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let capability: String
+    let speed: String
+}
+
+struct TagGroups: Codable {
+    let subjectContent: [String]
+    let sceneLighting: [String]
+    let compositionDistance: [String]
+    let styleImpression: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case subjectContent = "subject_content"
+        case sceneLighting = "scene_lighting"
+        case compositionDistance = "composition_distance"
+        case styleImpression = "style_impression"
+    }
+
+    static let empty = TagGroups(
+        subjectContent: [],
+        sceneLighting: [],
+        compositionDistance: [],
+        styleImpression: []
+    )
+}
+
 // MARK: - Stream JSONL events from CLI --stream
 
 struct StreamStart: Codable {
@@ -46,10 +74,20 @@ struct StreamResult: Codable {
     let filePath: String
     let summary: String
     let caption: String?
+    let captionModel: String
+    let captionModelLabel: String
+    let modelInitializationSeconds: Double
+    let analysisDurationSeconds: Double
+    let tagGroups: TagGroups
     let tags: [String]
 
     enum CodingKeys: String, CodingKey {
         case type, index, summary, caption, tags
+        case captionModel = "caption_model"
+        case captionModelLabel = "caption_model_label"
+        case modelInitializationSeconds = "model_initialization_seconds"
+        case analysisDurationSeconds = "analysis_duration_seconds"
+        case tagGroups = "tag_groups"
         case fileName = "file_name"
         case filePath = "file_path"
     }
@@ -99,10 +137,20 @@ struct CLIItem: Codable {
     let filePath: String
     let summary: String
     let caption: String?
+    let captionModel: String
+    let captionModelLabel: String
+    let modelInitializationSeconds: Double
+    let analysisDurationSeconds: Double
+    let tagGroups: TagGroups
     let tags: [String]
 
     enum CodingKeys: String, CodingKey {
         case summary, caption, tags
+        case captionModel = "caption_model"
+        case captionModelLabel = "caption_model_label"
+        case modelInitializationSeconds = "model_initialization_seconds"
+        case analysisDurationSeconds = "analysis_duration_seconds"
+        case tagGroups = "tag_groups"
         case fileName = "file_name"
         case filePath = "file_path"
     }
@@ -127,6 +175,11 @@ struct PhotoResult: Identifiable {
     let id = UUID()
     let fileName: String
     let filePath: String
+    let captionModel: String
+    let captionModelLabel: String
+    let modelInitializationSeconds: Double
+    let analysisDurationSeconds: Double
+    let tagGroups: TagGroups
     let tags: [String]
     let summary: String
 }

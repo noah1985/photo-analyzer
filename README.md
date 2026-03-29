@@ -19,9 +19,9 @@
 
 Python 侧采用“本地图像描述模型 + 轻量视觉特征”的组合：
 
-- 本地图像描述模型：`Salesforce/blip-image-captioning-base`
+- 本地图像描述模型：`Salesforce/blip-image-captioning-large`
 - 视觉特征：亮度、对比度、饱和度、冷暖倾向、清晰度、宽高比
-- 输出结果：基础信息、基础指标、caption、描述标签、中文总结
+- 输出结果：基础信息、基础指标、caption、4 组受控标签、中文总结
 - 标签范围来自本地可编辑配置：`photo_analyzer/taxonomy.json`
 
 若本地图像描述模型不可用，CLI 会自动退回纯规则标签，不会整次分析失败。
@@ -70,11 +70,14 @@ python3 -m photo_analyzer analyze /path/to/image.jpg
 
 Python 分析链路的最终标签严格限制在 [taxonomy.json](/Users/Noah/Work/my_project/photo_analyzer/taxonomy.json) 中。
 
-这份配置按三组组织：
+这份配置按四组组织：
 
-- `subject`：主体标签
-- `scene`：场景标签
-- `style`：风格/状态标签
+- `subject_content`：题材 / 内容
+- `scene_lighting`：场景 / 光线
+- `composition_distance`：构图 / 景别
+- `style_impression`：风格 / 观感
+
+每组最多输出 2 个标签，允许为空。
 
 每个标签项都包含：
 

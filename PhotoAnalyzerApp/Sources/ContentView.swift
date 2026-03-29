@@ -73,6 +73,14 @@ private struct ToolbarArea: View {
                         .colorScheme(.light)
                 }
 
+                Picker("模型", selection: $state.selectedModelKey) {
+                    ForEach(AnalyzerService.availableModels) { model in
+                        Text(model.title).tag(model.id)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 110)
+
                 Button(action: state.startAnalysis) {
                     HStack(spacing: 5) {
                         if state.isAnalyzing {
@@ -104,6 +112,16 @@ private struct ToolbarArea: View {
                 if let error = state.errorMessage {
                     ErrorPill(message: error)
                 }
+            }
+
+            Text("模型说明：\(state.selectedModelOption.capability) \(state.selectedModelOption.speed)")
+                .font(.system(size: 12))
+                .foregroundStyle(LightTheme.textMuted)
+
+            if !state.batchSummary.isEmpty {
+                Text("本次分析：\(state.batchSummary)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(LightTheme.textPrimary)
             }
         }
         .padding(.horizontal, GalleryFixedLayout.horizontalPadding)
@@ -372,20 +390,53 @@ private struct PhotoCard: View {
                 .foregroundStyle(LightTheme.textPrimary)
                 .lineLimit(2)
 
+            HStack(spacing: 6) {
+                Text(result.captionModelLabel)
+                    .font(.system(size: 10, weight: .semibold))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(LightTheme.tagBg))
+                    .foregroundStyle(LightTheme.tagText)
+
+                Text("单张分析 \(result.analysisDurationSeconds, specifier: "%.2f") 秒")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(LightTheme.textMuted)
+            }
+
             Text(result.summary)
                 .font(.system(size: 12))
                 .foregroundStyle(LightTheme.textMuted)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
 
-            FlowLayout(spacing: 4) {
-                ForEach(result.tags, id: \.self) { tag in
-                    TagChip(label: tag)
-                }
-            }
+            GroupedTagSection(title: "题材 / 内容", tags: result.tagGroups.subjectContent)
+            GroupedTagSection(title: "场景 / 光线", tags: result.tagGroups.sceneLighting)
+            GroupedTagSection(title: "构图 / 景别", tags: result.tagGroups.compositionDistance)
+            GroupedTagSection(title: "风格 / 观感", tags: result.tagGroups.styleImpression)
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct GroupedTagSection: View {
+    let title: String
+    let tags: [String]
+
+    var body: some View {
+        if !tags.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(LightTheme.textMuted)
+
+                FlowLayout(spacing: 4) {
+                    ForEach(tags, id: \.self) { tag in
+                        TagChip(label: tag)
+                    }
+                }
+            }
+        }
     }
 }
 

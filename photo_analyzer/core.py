@@ -1,18 +1,37 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Dict, List
 
 from PIL import Image, ImageFilter, ImageStat, UnidentifiedImageError
 
-from .captioning import CaptioningError, generate_caption
+from .captioning import (
+    DEFAULT_MODEL_KEY,
+    CaptioningError,
+    consume_last_model_init_seconds,
+    generate_caption,
+    resolve_model_spec,
+)
 
 
-ANALYSIS_VERSION = "1.0.0"
+ANALYSIS_VERSION = "1.1.0"
 SUPPORTED_FORMATS = {"JPEG", "PNG", "WEBP", "BMP", "GIF", "TIFF"}
-VALID_TAG_GROUPS = {"subject", "scene", "style"}
+TAG_GROUP_ORDER = (
+    "subject_content",
+    "scene_lighting",
+    "composition_distance",
+    "style_impression",
+)
+TAG_GROUP_LABELS = {
+    "subject_content": "题材 / 内容",
+    "scene_lighting": "场景 / 光线",
+    "composition_distance": "构图 / 景别",
+    "style_impression": "风格 / 观感",
+}
+VALID_TAG_GROUPS = set(TAG_GROUP_ORDER)
 
 
 class AnalysisError(Exception):
@@ -58,6 +77,11 @@ class AnalysisResult:
     image: ImageInfo
     metrics: ImageMetrics
     caption: str
+    caption_model: str
+    caption_model_label: str
+    model_initialization_seconds: float
+    analysis_duration_seconds: float
+    tag_groups: Dict[str, List[str]]
     tags: List[str]
     summary: str
     analysis_version: str
@@ -86,19 +110,25 @@ def load_taxonomy() -> List[TagDefinition]:
         raise TaxonomyError("标签配置缺少 categories 对象")
 
     definitions: List[TagDefinition] = []
-    for group_name in ("subject", "scene", "style"):
+    for group_name in TAG_GROUP_ORDER:
         entries = categories.get(group_name)
         if not isinstance(entries, list):
             raise TaxonomyError(f"标签配置缺少 categories.{group_name} 列表")
         for entry in entries:
             if not isinstance(entry, dict):
                 raise TaxonomyError(f"标签配置 categories.{group_name} 中存在非法项")
-            required = ("id", "label", "group", "enabled", "trigger_terms", "metric_rules", "summary_priority")
+            required = (
+                "id",
+                "label",
+                "group",
+                "enabled",
+                "trigger_terms",
+                "metric_rules",
+                "summary_priority",
+            )
             missing = [key for key in required if key not in entry]
             if missing:
-                raise TaxonomyError(
-                    f"标签配置项缺少字段：{', '.join(missing)}"
-                )
+                raise TaxonomyError(f"标签配置项缺少字段：{', '.join(missing)}")
             group = str(entry["group"])
             if group not in VALID_TAG_GROUPS:
                 raise TaxonomyError(f"标签配置项 group 非法：{group}")
@@ -230,54 +260,87 @@ def _match_metric_rules(metrics: ImageMetrics, aspect_ratio: float, definition: 
     return True
 
 
-def _select_tags(
+def _select_tag_groups(
     caption: str,
     metrics: ImageMetrics,
     aspect_ratio: float,
     definitions: List[TagDefinition],
-) -> List[TagDefinition]:
-    matched: List[TagDefinition] = []
+) -> Dict[str, List[str]]:
+    grouped_matches: Dict[str, List[tuple[int, int, int, str]]] = {group: [] for group in TAG_GROUP_ORDER}
+
     for definition in definitions:
         if not definition.enabled:
             continue
-        if _match_trigger_terms(caption, definition) or _match_metric_rules(metrics, aspect_ratio, definition):
-            matched.append(definition)
+        trigger_match = _match_trigger_terms(caption, definition)
+        metric_match = _match_metric_rules(metrics, aspect_ratio, definition)
+        if not trigger_match and not metric_match:
+            continue
+        grouped_matches[definition.group].append(
+            (
+                0 if trigger_match else 1,
+                0 if metric_match else 1,
+                definition.summary_priority,
+                definition.label,
+            )
+        )
 
-    matched.sort(key=lambda item: (item.summary_priority, item.label))
-    return matched
+    tag_groups: Dict[str, List[str]] = {group: [] for group in TAG_GROUP_ORDER}
+    for group_name in TAG_GROUP_ORDER:
+        ranked = sorted(grouped_matches[group_name])
+        seen: set[str] = set()
+        for _trigger_rank, _metric_rank, _priority, label in ranked:
+            if label in seen:
+                continue
+            seen.add(label)
+            tag_groups[group_name].append(label)
+            if len(tag_groups[group_name]) == 2:
+                break
+    return tag_groups
 
 
-def _build_summary(orientation: str, caption: str, tags: List[TagDefinition]) -> str:
-    if not tags:
-        if caption:
-            return f"这是一张{orientation}，模型描述接近“{caption}”。"
-        return f"这是一张{orientation}。"
+def _flatten_tag_groups(tag_groups: Dict[str, List[str]]) -> List[str]:
+    tags: List[str] = []
+    for group_name in TAG_GROUP_ORDER:
+        tags.extend(tag_groups.get(group_name, []))
+    return tags
 
-    grouped = {
-        "subject": [item.label for item in tags if item.group == "subject"],
-        "scene": [item.label for item in tags if item.group == "scene"],
-        "style": [item.label for item in tags if item.group == "style"],
-    }
-    selected: List[str] = []
-    for group_name in ("subject", "scene", "style"):
-        selected.extend(grouped[group_name][:2 if group_name == "style" else 1])
 
+def _build_summary(
+    orientation: str,
+    caption: str,
+    tag_groups: Dict[str, List[str]],
+) -> str:
+    subject = tag_groups["subject_content"]
+    scene = tag_groups["scene_lighting"]
+    composition = tag_groups["composition_distance"]
+    style = tag_groups["style_impression"]
+
+    parts = [f"这是一张{orientation}"]
+    if subject:
+        parts.append(f"内容更接近{subject[0]}")
+    if scene:
+        parts.append(f"拍摄环境偏{scene[0]}")
+    if style:
+        style_text = "、".join(style[:2])
+        parts.append(f"整体观感呈现{style_text}")
+    elif composition:
+        parts.append(f"画面带有{composition[0]}")
+
+    sentence = "，".join(parts) + "。"
     if caption:
-        return f"这是一张{orientation}，模型描述接近“{caption}”，整体特征包括：{'、'.join(selected)}。"
-    return f"这是一张{orientation}，当前可识别的特征包括：{'、'.join(selected)}。"
+        return f"{sentence} 模型描述接近“{caption}”。"
+    return sentence
 
 
-def analyze_image(image_path: str) -> AnalysisResult:
+def analyze_image(image_path: str, *, model_key: str | None = None) -> AnalysisResult:
+    started_at = time.perf_counter()
     path = Path(image_path).expanduser().resolve()
     if not path.exists():
         raise AnalysisError(f"文件不存在：{path}")
     if not path.is_file():
         raise AnalysisError(f"不是文件：{path}")
 
-    try:
-        definitions = load_taxonomy()
-    except TaxonomyError:
-        raise
+    definitions = load_taxonomy()
 
     try:
         with Image.open(path) as image:
@@ -302,21 +365,31 @@ def analyze_image(image_path: str) -> AnalysisResult:
         aspect_ratio=aspect_ratio,
     )
 
+    model_spec = resolve_model_spec(model_key or DEFAULT_MODEL_KEY)
+
     errors: List[str] = []
     caption = ""
+    model_initialization_seconds = 0.0
     try:
-        caption = generate_caption(str(path))
+        caption = generate_caption(str(path), model_spec.key)
     except (CaptioningError, RuntimeError) as exc:
         errors.append(str(exc))
+    finally:
+        model_initialization_seconds = consume_last_model_init_seconds(model_spec.key)
 
-    tag_defs = _select_tags(caption, metrics, aspect_ratio, definitions)
-    tags = [item.label for item in tag_defs]
-    summary = _build_summary(orientation, caption, tag_defs)
+    tag_groups = _select_tag_groups(caption, metrics, aspect_ratio, definitions)
+    tags = _flatten_tag_groups(tag_groups)
+    summary = _build_summary(orientation, caption, tag_groups)
 
     return AnalysisResult(
         image=image_info,
         metrics=metrics,
         caption=caption,
+        caption_model=model_spec.key,
+        caption_model_label=model_spec.label,
+        model_initialization_seconds=model_initialization_seconds,
+        analysis_duration_seconds=round(max(time.perf_counter() - started_at - model_initialization_seconds, 0.0), 2),
+        tag_groups=tag_groups,
         tags=tags,
         summary=summary,
         analysis_version=ANALYSIS_VERSION,

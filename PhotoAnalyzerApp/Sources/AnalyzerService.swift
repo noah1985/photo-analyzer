@@ -34,7 +34,28 @@ enum StreamEvent {
 }
 
 final class AnalyzerService {
-    static let bundledUIVersion = "1.0.0"
+    static let bundledUIVersion = "1.1.0"
+    static let defaultModelKey = "balanced"
+    static let availableModels: [CaptionModelOption] = [
+        CaptionModelOption(
+            id: "fast",
+            title: "快速",
+            capability: "主体识别基础稳定，适合快速初筛。",
+            speed: "CPU 下通常 2-4 秒/张。"
+        ),
+        CaptionModelOption(
+            id: "balanced",
+            title: "平衡",
+            capability: "主体和场景判断更稳，推荐默认使用。",
+            speed: "CPU 下通常 3-8 秒/张。"
+        ),
+        CaptionModelOption(
+            id: "detailed",
+            title: "细节",
+            capability: "描述更开放，细节词更多，但有时更发散。",
+            speed: "CPU 下通常 4-9 秒/张。"
+        ),
+    ]
 
     // MARK: - Python discovery
 
@@ -143,6 +164,7 @@ final class AnalyzerService {
     static func analyzeDirectoryStreaming(
         at directoryPath: String,
         count: Int,
+        modelKey: String,
         onEvent: @escaping (StreamEvent) -> Void
     ) async throws {
         let root = guessProjectRoot()
@@ -159,6 +181,7 @@ final class AnalyzerService {
             "-m", "photo_analyzer",
             "analyze-dir", directoryPath,
             "--count", String(count),
+            "--model", modelKey,
             "--stream",
         ]
         task.standardOutput = stdoutPipe
@@ -242,6 +265,11 @@ final class AnalyzerService {
                 let result = PhotoResult(
                     fileName: obj.fileName,
                     filePath: obj.filePath,
+                    captionModel: obj.captionModel,
+                    captionModelLabel: obj.captionModelLabel,
+                    modelInitializationSeconds: obj.modelInitializationSeconds,
+                    analysisDurationSeconds: obj.analysisDurationSeconds,
+                    tagGroups: obj.tagGroups,
                     tags: obj.tags,
                     summary: obj.summary
                 )

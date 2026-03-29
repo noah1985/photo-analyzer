@@ -11,6 +11,8 @@ from PIL import Image
 
 from photo_analyzer.cli import build_gallery_item, format_result
 from photo_analyzer.core import (
+    ANALYSIS_VERSION,
+    TAG_GROUP_ORDER,
     AnalysisError,
     AnalysisResult,
     ImageInfo,
@@ -26,9 +28,10 @@ TEST_ENV = {"PHOTO_ANALYZER_CAPTION_OVERRIDE": "a warm portrait photo indoors"}
 
 
 class PhotoAnalyzerTests(unittest.TestCase):
-    def test_taxonomy_loads(self) -> None:
+    def test_taxonomy_loads_four_groups(self) -> None:
         definitions = load_taxonomy()
         self.assertTrue(definitions)
+        self.assertEqual({item.group for item in definitions}, set(TAG_GROUP_ORDER))
         self.assertTrue(any(item.label == "人像" for item in definitions))
 
     def test_missing_file_raises_error(self) -> None:
@@ -36,7 +39,7 @@ class PhotoAnalyzerTests(unittest.TestCase):
             analyze_image("/tmp/does-not-exist-xyz.png")
 
     @patch("photo_analyzer.core.generate_caption", return_value="a warm portrait photo indoors")
-    def test_analyze_image_returns_caption_metrics_and_tags(self, _mock_caption: object) -> None:
+    def test_analyze_image_returns_grouped_tags(self, _mock_caption: object) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "x.png"
             Image.new("RGB", (50, 40), (190, 120, 80)).save(path)
@@ -44,11 +47,13 @@ class PhotoAnalyzerTests(unittest.TestCase):
 
         self.assertEqual(result.image.orientation, "横图")
         self.assertEqual(result.caption, "a warm portrait photo indoors")
-        self.assertTrue(result.tags)
-        self.assertIn("人像", result.tags)
+        self.assertIn("人像", result.tag_groups["subject_content"])
+        self.assertIn("室内", result.tag_groups["scene_lighting"])
+        self.assertIn("暖色调", result.tag_groups["style_impression"])
+        self.assertLessEqual(len(result.tag_groups["subject_content"]), 2)
+        self.assertLessEqual(len(result.tag_groups["scene_lighting"]), 2)
         self.assertEqual(result.metrics.temperature, "偏暖")
         self.assertIn("模型描述接近", result.summary)
-        self.assertIn("室内场景", result.tags)
 
     @patch("photo_analyzer.core.generate_caption", side_effect=RuntimeError("boom"))
     def test_analyze_image_falls_back_when_caption_fails(self, _mock_caption: object) -> None:
@@ -58,35 +63,38 @@ class PhotoAnalyzerTests(unittest.TestCase):
             result = analyze_image(str(path))
 
         self.assertEqual(result.caption, "")
-        self.assertTrue(result.tags)
-        self.assertIn("低光", result.tags)
+        self.assertTrue(result.tag_groups["scene_lighting"])
+        self.assertIn("低光", result.tag_groups["scene_lighting"])
         self.assertTrue(result.errors)
 
     @patch(
         "photo_analyzer.core.generate_caption",
-        return_value="a close-up photo of flowers in a park at night",
+        return_value="a close-up photo of flowers in a park at night with a cinematic mood",
     )
-    def test_analyze_image_expands_subject_scene_and_mood_tags(self, _mock_caption: object) -> None:
+    def test_analyze_image_limits_to_two_tags_per_group(self, _mock_caption: object) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "x.png"
             Image.new("RGB", (120, 90), (180, 80, 100)).save(path)
             result = analyze_image(str(path))
 
-        self.assertIn("花卉植物", result.tags)
-        self.assertIn("室外场景", result.tags)
-        self.assertIn("夜景", result.tags)
-        self.assertIn("近景特写", result.tags)
+        for group_name in TAG_GROUP_ORDER:
+            self.assertLessEqual(len(result.tag_groups[group_name]), 2)
+        self.assertIn("夜景", result.tag_groups["scene_lighting"])
+        self.assertIn("特写", result.tag_groups["composition_distance"])
 
     def test_missing_taxonomy_raises_error(self) -> None:
-        with patch("photo_analyzer.core.taxonomy_path", return_value=Path("/tmp/no-taxonomy.json")):
-            with self.assertRaises(AnalysisError):
-                analyze_image("/tmp/does-not-exist-xyz.png")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "x.png"
+            Image.new("RGB", (40, 40), (50, 50, 50)).save(path)
+            with patch("photo_analyzer.core.taxonomy_path", return_value=Path("/tmp/no-taxonomy.json")):
+                with self.assertRaises(AnalysisError):
+                    analyze_image(str(path))
 
     def test_disabled_taxonomy_tag_is_not_emitted(self) -> None:
         original = taxonomy_path().read_text(encoding="utf-8")
         payload = json.loads(original)
-        for item in payload["categories"]["style"]:
-            if item["label"] == "偏暖":
+        for item in payload["categories"]["style_impression"]:
+            if item["label"] == "暖色调":
                 item["enabled"] = False
         with tempfile.TemporaryDirectory() as tmpdir:
             custom = Path(tmpdir) / "taxonomy.json"
@@ -96,33 +104,33 @@ class PhotoAnalyzerTests(unittest.TestCase):
                     path = Path(tmpdir) / "x.png"
                     Image.new("RGB", (50, 40), (190, 120, 80)).save(path)
                     result = analyze_image(str(path))
-        self.assertNotIn("偏暖", result.tags)
+        self.assertNotIn("暖色调", result.tags)
 
     def test_custom_taxonomy_tag_can_be_added(self) -> None:
         original = taxonomy_path().read_text(encoding="utf-8")
         payload = json.loads(original)
-        payload["categories"]["subject"].append(
+        payload["categories"]["subject_content"].append(
             {
-                "id": "craft_tools",
-                "label": "手作工具",
-                "group": "subject",
+                "id": "flowers",
+                "label": "花卉",
+                "group": "subject_content",
                 "enabled": True,
-                "trigger_terms": ["scissors", "tool", "craft"],
+                "trigger_terms": ["flower", "flowers", "tulip"],
                 "metric_rules": {},
-                "summary_priority": 24,
+                "summary_priority": 9,
             }
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             custom = Path(tmpdir) / "taxonomy.json"
             custom.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
             with patch("photo_analyzer.core.taxonomy_path", return_value=custom):
-                with patch("photo_analyzer.core.generate_caption", return_value="a bunch of scissors on a table"):
+                with patch("photo_analyzer.core.generate_caption", return_value="a close-up of yellow tulip flowers"):
                     path = Path(tmpdir) / "x.png"
-                    Image.new("RGB", (60, 60), (110, 110, 110)).save(path)
+                    Image.new("RGB", (60, 60), (180, 180, 60)).save(path)
                     result = analyze_image(str(path))
-        self.assertIn("手作工具", result.tags)
+        self.assertIn("花卉", result.tags)
 
-    def test_format_result_shows_metrics_and_caption(self) -> None:
+    def test_format_result_shows_group_sections(self) -> None:
         result = AnalysisResult(
             image=ImageInfo(
                 path="/tmp/x.png",
@@ -139,16 +147,26 @@ class PhotoAnalyzerTests(unittest.TestCase):
                 temperature="偏暖",
                 sharpness=8.2,
             ),
-            caption="a warm portrait photo indoors",
-            tags=["人像", "偏暖"],
+            caption="warm indoor portrait",
+            caption_model="balanced",
+            caption_model_label="平衡",
+            model_initialization_seconds=0.0,
+            analysis_duration_seconds=1.23,
+            tag_groups={
+                "subject_content": ["人像"],
+                "scene_lighting": ["室内"],
+                "composition_distance": ["近景"],
+                "style_impression": ["暖色调"],
+            },
+            tags=["人像", "室内", "近景", "暖色调"],
             summary="测试摘要",
-            analysis_version="1.0.0",
+            analysis_version=ANALYSIS_VERSION,
             errors=[],
         )
         text = format_result(result)
-        self.assertIn("描述标签", text)
+        self.assertIn("题材 / 内容", text)
+        self.assertIn("场景 / 光线", text)
         self.assertIn("本地模型描述", text)
-        self.assertIn("亮度：22.1", text)
         self.assertNotIn("CLIP 标签", text)
 
     def test_gallery_item_shape(self) -> None:
@@ -169,15 +187,25 @@ class PhotoAnalyzerTests(unittest.TestCase):
                 sharpness=7.0,
             ),
             caption="a cup on a table",
-            tags=["静物物件"],
+            caption_model="fast",
+            caption_model_label="快速",
+            model_initialization_seconds=0.0,
+            analysis_duration_seconds=0.84,
+            tag_groups={
+                "subject_content": ["静物"],
+                "scene_lighting": ["室内"],
+                "composition_distance": [],
+                "style_impression": [],
+            },
+            tags=["静物", "室内"],
             summary="s",
-            analysis_version="1.0.0",
+            analysis_version=ANALYSIS_VERSION,
             errors=[],
         )
         item = build_gallery_item(result)
         self.assertEqual(item["caption"], "a cup on a table")
-        self.assertIn("静物物件", item["tags"])
-        self.assertNotIn("semantic_tags", item)
+        self.assertIn("静物", item["tags"])
+        self.assertIn("tag_groups", item)
 
     def test_desktop_app_helper_clamps_count_and_tags(self) -> None:
         result = AnalysisResult(
@@ -197,9 +225,14 @@ class PhotoAnalyzerTests(unittest.TestCase):
                 sharpness=7.0,
             ),
             caption="",
+            caption_model="balanced",
+            caption_model_label="平衡",
+            model_initialization_seconds=0.0,
+            analysis_duration_seconds=0.12,
+            tag_groups={group: [] for group in TAG_GROUP_ORDER},
             tags=[],
             summary="s",
-            analysis_version="1.0.0",
+            analysis_version=ANALYSIS_VERSION,
             errors=[],
         )
         self.assertEqual(build_card_tags(result), ["无描述标签"])
@@ -207,7 +240,7 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertEqual(clamp_sample_count("0"), 1)
         self.assertEqual(clamp_sample_count("abc"), 100)
 
-    def test_cli_outputs_new_sections(self) -> None:
+    def test_cli_outputs_grouped_sections(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "sample.png"
             Image.new("RGB", (64, 64), (200, 180, 160)).save(path)
@@ -223,8 +256,9 @@ class PhotoAnalyzerTests(unittest.TestCase):
             )
         self.assertEqual(completed.returncode, 0, msg=completed.stderr)
         self.assertIn("总体判断：", completed.stdout)
-        self.assertIn("描述标签", completed.stdout)
-        self.assertIn("本地模型描述", completed.stdout)
+        self.assertIn("题材 / 内容", completed.stdout)
+        self.assertIn("场景 / 光线", completed.stdout)
+        self.assertIn("分析信息", completed.stdout)
         self.assertNotIn("CLIP", completed.stdout)
 
     def test_cli_version_flag(self) -> None:
@@ -236,7 +270,7 @@ class PhotoAnalyzerTests(unittest.TestCase):
             cwd=Path(__file__).resolve().parents[1],
         )
         self.assertEqual(completed.returncode, 0, msg=completed.stderr)
-        self.assertIn("1.0.0", completed.stdout)
+        self.assertIn("1.1.0", completed.stdout)
 
     def test_cli_accepts_directory_for_batch_analysis(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -302,9 +336,11 @@ class PhotoAnalyzerTests(unittest.TestCase):
             html_text = html_path.read_text(encoding="utf-8")
             payload = json.loads(json_text)
             self.assertEqual(payload["sample_count"], 2)
-            self.assertIn('"file_name": "a.png"', json_text)
+            self.assertIn('"tag_groups"', json_text)
             self.assertIn('"caption": "a warm portrait photo indoors"', json_text)
-            self.assertNotIn('"top_k"', json_text)
+            self.assertIn('"caption_model": "balanced"', json_text)
+            self.assertIn('"model_initialization_seconds"', json_text)
+            self.assertIn('"analysis_duration_seconds"', json_text)
             self.assertIn("测试照片数（最大 100）", html_text)
             self.assertNotIn("--top-k", html_text)
             self.assertIn("a.png", html_text)
@@ -364,6 +400,9 @@ class PhotoAnalyzerTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn('VersionPill(title: "UI"', content_view_text)
         self.assertIn('VersionPill(title: "CLI"', content_view_text)
+        self.assertIn('GroupedTagSection(title: "题材 / 内容"', content_view_text)
+        self.assertIn('Picker("模型"', content_view_text)
+        self.assertIn("本次分析", content_view_text)
 
 
 if __name__ == "__main__":

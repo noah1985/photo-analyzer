@@ -7,12 +7,15 @@ final class AppState: ObservableObject {
     // Input
     @Published var selectedDirectory: URL?
     @Published var sampleCount: Int = 20
+    @Published var selectedModelKey: String = AnalyzerService.defaultModelKey
 
     // Progress
     @Published var isAnalyzing = false
     @Published var totalImages: Int = 0
     @Published var completedImages: Int = 0
     @Published var currentFileName: String = ""
+    @Published var modelInitializationSeconds: Double = 0
+    @Published var totalAnalysisSeconds: Double = 0
 
     // Output
     @Published var results: [PhotoResult] = []
@@ -22,6 +25,24 @@ final class AppState: ObservableObject {
 
     var directoryName: String {
         selectedDirectory?.lastPathComponent ?? ""
+    }
+
+    var selectedModelOption: CaptionModelOption {
+        AnalyzerService.availableModels.first(where: { $0.id == selectedModelKey })
+            ?? AnalyzerService.availableModels[1]
+    }
+
+    var batchSummary: String {
+        guard !results.isEmpty || !failures.isEmpty else { return "" }
+        let total = results.count + failures.count
+        return String(
+            format: "模型初始化 %.2f 秒，共 %d 张照片，成功 %d 张，失败 %d 张，总耗时 %.2f 秒。",
+            modelInitializationSeconds,
+            total,
+            results.count,
+            failures.count,
+            totalAnalysisSeconds
+        )
     }
 
     init() {
@@ -66,13 +87,17 @@ final class AppState: ObservableObject {
         totalImages = 0
         completedImages = 0
         currentFileName = ""
+        modelInitializationSeconds = 0
+        totalAnalysisSeconds = 0
         statusMessage = "正在启动分析……"
+        let batchStartedAt = Date()
 
         Task {
             do {
                 try await AnalyzerService.analyzeDirectoryStreaming(
                     at: directory.path,
-                    count: count
+                    count: count,
+                    modelKey: selectedModelKey
                 ) { [weak self] event in
                     DispatchQueue.main.async {
                         self?.handleEvent(event)
@@ -87,6 +112,7 @@ final class AppState: ObservableObject {
                 errorMessage = error.localizedDescription
                 statusMessage = "分析出错。"
             }
+            totalAnalysisSeconds = Date().timeIntervalSince(batchStartedAt)
             isAnalyzing = false
             currentFileName = ""
         }
@@ -112,6 +138,9 @@ final class AppState: ObservableObject {
             results.append(photo)
             completedImages += 1
             currentFileName = photo.fileName
+            if modelInitializationSeconds == 0, photo.modelInitializationSeconds > 0 {
+                modelInitializationSeconds = photo.modelInitializationSeconds
+            }
             statusMessage = "正在分析（\(completedImages)/\(totalImages)）：\(photo.fileName)"
 
         case .failure(let fail):

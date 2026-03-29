@@ -11,7 +11,7 @@ BUILD_DIR="$SCRIPT_DIR/.build/release"
 APP_BUNDLE="$SCRIPT_DIR/$APP_NAME.app"
 
 echo "==> 编译 Release 版本……"
-swift build -c release 2>&1
+xcrun swift build -c release 2>&1
 
 echo "==> 组装 $APP_NAME.app ……"
 rm -rf "$APP_BUNDLE"
@@ -35,7 +35,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" << 'PLIST'
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>1.1.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>

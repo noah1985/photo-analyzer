@@ -7,6 +7,7 @@
   - `快速`
   - `平衡`
   - `细节`
+  - `摄影`
 - Python CLI 增加 `--model` 参数，`analyze`、`analyze-dir`、`sample-gallery` 全部支持。
 
 2. 标签体系升级
@@ -53,7 +54,7 @@
   - 避免类似 `animal` 这样的宽泛词把人物图打成 `野生动物`
 - taxonomy 继续扩充为更完整的摄影标签词表，便于后续基于真实样本继续收规则。
 
-7. 摄影语义增强模型（本次追加）
+7. 摄影模型路线收敛（本次追加）
 - 新增 `photo` 模型预设，作为摄影语义优先的更强本地模型。
 - 最终收敛为更稳的传统 caption 路线，底层模型改为 `microsoft/git-base-coco`。
 - 清理了此前为小型多模态指令模型试验加入的结构化摄影分析冗余代码：
@@ -65,6 +66,9 @@
   - 首张初始化更轻
   - 单张 CPU 耗时显著下降到约 `4-12 秒`
 - Swift App 模型选择器同步增加 `摄影` 选项。
+- 对外定位也同步调整为：
+  - 摄影方向的补充模型
+  - 可试，但默认仍建议优先使用 `balanced`
 
 7. 人物分类情境感知优化（本次追加）
 - **问题**：`_refine_tag_groups` 检测到人物后无条件插入"人像"标签，导致弹钢琴、街拍路人、活动现场等照片全部归为人像。同时 `has_person` 缺少复数形式（girls / boys / women / men / children 等），很多含人物的照片检测不到人。
@@ -89,7 +93,18 @@
 
 验证情况：
 
-- `python3 -m unittest discover -s tests -v`（20 tests OK）
+- `python3 -m unittest discover -s tests -v`（24 tests OK）
 - `bash PhotoAnalyzerApp/build_app.sh`
 
-本次提交只做本地 commit，不推送远程。
+## v1.1.0 发布标记
+
+本迭代正式定为 **v1.1.0**，与下列位置一致：
+
+- `photo_analyzer/core.py` → `ANALYSIS_VERSION`
+- `pyproject.toml` → `version`
+- `PhotoAnalyzerApp/Sources/AnalyzerService.swift` → `bundledUIVersion`
+- `PhotoAnalyzerApp/build_app.sh` 生成的 `Info.plist` → `CFBundleShortVersionString`
+
+技术说明目录：[technical_notes/](../../technical_notes/README.md)。
+
+推送远程与 `git tag v1.1.0` 按需执行。

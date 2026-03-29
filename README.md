@@ -2,7 +2,7 @@
 
 本地图片分析工具，分成两条独立路径：
 
-- [local_gallery.html](/Users/Noah/Work/my_project/local_gallery.html)：直接双击打开即可用的轻量本地页面
+- [local_gallery.html](local_gallery.html)：直接双击打开即可用的轻量本地页面
 - Python CLI：本地模型优先的图片分析入口，负责更强的离线分析能力
 
 ## HTML 路径
@@ -19,18 +19,25 @@
 
 Python 侧采用“本地图像描述模型 + 轻量视觉特征”的组合：
 
-- 本地图像描述模型：`Salesforce/blip-image-captioning-large`
-- 可选摄影语义增强模型：`HuggingFaceTB/SmolVLM2-2.2B-Instruct`
+- 本地图像描述模型：基于 Hugging Face 的本地 caption 模型
+- 当前默认主力模型：`Salesforce/blip-image-captioning-large`
+- 当前摄影补充模型：`microsoft/git-base-coco`
 - 视觉特征：亮度、对比度、饱和度、冷暖倾向、清晰度、宽高比
 - 输出结果：基础信息、基础指标、caption、4 组受控标签、中文总结
 - 标签范围来自本地可编辑配置：`photo_analyzer/taxonomy.json`
 
 模型预设：
 
-- `fast`：快速初筛
-- `balanced`：默认平衡
-- `detailed`：自由描述更丰富
-- `photo`：摄影语义优先，更适合人像、纪实、运动、黑白摄影
+- `fast`：`Salesforce/blip-image-captioning-base`，适合快速初筛
+- `balanced`：`Salesforce/blip-image-captioning-large`，当前默认主力
+- `detailed`：`nlpconnect/vit-gpt2-image-captioning`，自由描述更开放
+- `photo`：`microsoft/git-base-coco`，摄影方向的补充模型，可试，但当前默认仍推荐 `balanced`
+
+说明：
+
+- 早期尝试过 `SmolVLM` 等小型多模态指令模型，但当前已经停止作为主实现
+- 当前主链路已经收敛为：`caption -> taxonomy 映射 -> 4 组标签 -> 中文总结`
+- 更完整的模型说明见 [technical_notes/MODELS.md](technical_notes/MODELS.md)
 
 若本地图像描述模型不可用，CLI 会自动退回纯规则标签，不会整次分析失败。
 
@@ -55,7 +62,7 @@ photo-analyzer analyze /path/to/photo-folder
 photo-analyzer sample-gallery /path/to/photo-folder --count 100 --seed 20260421
 ```
 
-生成 `results.json` 后，可直接打开 [local_gallery.html](/Users/Noah/Work/my_project/local_gallery.html) 并选择包含该文件的目录进行浏览。
+生成 `results.json` 后，可直接打开 [local_gallery.html](local_gallery.html) 并选择包含该文件的目录进行浏览。
 
 本地桌面入口仍保留：
 
@@ -76,7 +83,7 @@ python3 -m photo_analyzer analyze /path/to/image.jpg
 
 ## 标签配置
 
-Python 分析链路的最终标签严格限制在 [taxonomy.json](/Users/Noah/Work/my_project/photo_analyzer/taxonomy.json) 中。
+Python 分析链路的最终标签严格限制在 [photo_analyzer/taxonomy.json](photo_analyzer/taxonomy.json) 中。
 
 这份配置按四组组织：
 

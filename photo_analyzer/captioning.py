@@ -45,7 +45,7 @@ MODEL_SPECS = {
         key="photo",
         label="摄影",
         model_id="microsoft/git-base-coco",
-        capability="摄影语义优先，主体、场景、构图和风格判断更准。",
+        capability="摄影向 caption 补充（GIT COCO），可试；默认仍建议优先用平衡。",
         speed="CPU 下通常 4-12 秒/张。",
     ),
 }

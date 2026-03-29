@@ -62,7 +62,7 @@ final class AnalyzerService {
         CaptionModelOption(
             id: "photo",
             title: "摄影",
-            capability: "摄影语义优先，主体、场景、构图和风格判断更准。",
+            capability: "摄影方向的补充模型，部分题材更具体，但当前默认仍建议优先使用平衡。",
             speed: "CPU 下通常 4-12 秒/张。"
         ),
     ]

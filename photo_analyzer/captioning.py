@@ -105,11 +105,12 @@ def _caption_pipeline(model_key: str):
         _LAST_INIT_SECONDS[spec.key] = 0.0
         return _PIPELINE_CACHE[spec.key]
 
+    # 首次加载：把 import torch / transformers 算进「模型初始化」，避免第一张卡片的单张耗时把冷启动算进去。
+    started_at = time.perf_counter()
     import torch
     from transformers import pipeline
 
     device = 0 if torch.cuda.is_available() else -1
-    started_at = time.perf_counter()
     loaded = pipeline("image-to-text", model=spec.model_id, device=device)
     _PIPELINE_CACHE[spec.key] = loaded
     _LAST_INIT_SECONDS[spec.key] = round(time.perf_counter() - started_at, 2)
@@ -119,6 +120,23 @@ def _caption_pipeline(model_key: str):
 def consume_last_model_init_seconds(model_key: str | None) -> float:
     spec = resolve_model_spec(model_key)
     return _LAST_INIT_SECONDS.pop(spec.key, 0.0)
+
+
+def preload_caption_pipeline(model_key: str | None = None) -> float:
+    """若依赖可用且该预设尚未缓存，则加载 pipeline。返回本次加载耗时（秒），已缓存或不可用时为 0。"""
+    if not _dependencies_available():
+        return 0.0
+    try:
+        spec = resolve_model_spec(model_key)
+    except CaptioningError:
+        return 0.0
+    if spec.key in _PIPELINE_CACHE:
+        return 0.0
+    try:
+        _caption_pipeline(spec.key)
+    except CaptioningError:
+        return 0.0
+    return consume_last_model_init_seconds(spec.key)
 
 
 def generate_caption(image_path: str, model_key: str | None = None) -> str:

@@ -67,6 +67,26 @@ struct StreamProgress: Codable {
     }
 }
 
+struct StreamModelLoading: Codable {
+    let type: String
+    let captionModel: String
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case captionModel = "caption_model"
+    }
+}
+
+struct StreamModelReady: Codable {
+    let type: String
+    let modelInitializationSeconds: Double
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case modelInitializationSeconds = "model_initialization_seconds"
+    }
+}
+
 struct StreamResult: Codable {
     let type: String
     let index: Int

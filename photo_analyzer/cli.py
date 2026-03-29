@@ -9,7 +9,7 @@ from pathlib import Path
 from random import Random
 from typing import Iterable
 
-from .captioning import DEFAULT_MODEL_KEY, available_caption_models
+from .captioning import DEFAULT_MODEL_KEY, available_caption_models, preload_caption_pipeline
 from .core import (
     ANALYSIS_VERSION,
     TAG_GROUP_LABELS,
@@ -216,6 +216,14 @@ def _run_analyze_dir_stream(
         "requested_count": min(requested_count, available_count),
         "files": [{"file_name": t.name, "file_path": str(t)} for t in chosen],
     })
+
+    _emit({"type": "model_loading", "caption_model": model_key})
+    init_sec = 0.0
+    try:
+        init_sec = preload_caption_pipeline(model_key)
+    except Exception:  # pragma: no cover - 预加载失败时首张 analyze 仍会重试
+        init_sec = 0.0
+    _emit({"type": "model_ready", "model_initialization_seconds": init_sec})
 
     success_count = 0
     fail_count = 0

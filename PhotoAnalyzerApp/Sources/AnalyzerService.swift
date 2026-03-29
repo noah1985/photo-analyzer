@@ -26,6 +26,9 @@ enum AnalyzerError: LocalizedError {
 /// Events emitted during streaming analysis.
 enum StreamEvent {
     case start(total: Int, files: [StreamFileRef])
+    /// 流式分析在逐张 progress 之前预加载 caption pipeline
+    case modelLoading
+    case modelReady(modelInitializationSeconds: Double)
     /// 开始处理某一文件前发出（模型推理耗时期间界面可显示文件名）
     case progress(index: Int, fileName: String, filePath: String)
     case result(PhotoResult)
@@ -255,6 +258,14 @@ final class AnalyzerService {
         case "start":
             if let obj = try? decoder.decode(StreamStart.self, from: data) {
                 onEvent(.start(total: obj.total, files: obj.files))
+            }
+        case "model_loading":
+            if (try? decoder.decode(StreamModelLoading.self, from: data)) != nil {
+                onEvent(.modelLoading)
+            }
+        case "model_ready":
+            if let obj = try? decoder.decode(StreamModelReady.self, from: data) {
+                onEvent(.modelReady(modelInitializationSeconds: obj.modelInitializationSeconds))
             }
         case "progress":
             if let obj = try? decoder.decode(StreamProgress.self, from: data) {

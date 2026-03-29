@@ -124,7 +124,22 @@ final class AppState: ObservableObject {
             totalImages = total
             completedImages = 0
             currentFileName = ""
-            statusMessage = "共 \(total) 张，准备开始分析……"
+            statusMessage = "共 \(total) 张，准备加载模型……"
+
+        case .modelLoading:
+            currentFileName = ""
+            statusMessage = "正在加载本地模型……"
+
+        case .modelReady(let initSec):
+            modelInitializationSeconds = initSec
+            currentFileName = ""
+            if totalImages > 0 {
+                statusMessage = initSec > 0
+                    ? String(format: "模型已就绪（初始化 %.2f 秒），开始逐张分析……", initSec)
+                    : "模型已就绪，开始逐张分析……"
+            } else {
+                statusMessage = "准备分析……"
+            }
 
         case .progress(let index, let fileName, _):
             currentFileName = fileName

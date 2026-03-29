@@ -32,6 +32,15 @@
 - 重新打包本地 `.app`。
 - `build_app.sh` 改为使用 `xcrun swift build`，避免误用系统旧版 Swift。
 
+5. 流式分析与首卡耗时（后续修订）
+- **问题**：`analyze-dir --stream` 在首张 `progress` 发出时模型尚未加载，界面会误显示「正在分析第 1 张」；首张卡片「单张耗时」把 `torch` / `transformers` 的首次 import 算进分析时间，与第二张起不一致。
+- **CLI**：在 `start` 之后、逐张循环之前增加 JSONL 事件：
+  - `model_loading`（含 `caption_model`）
+  - 调用 `preload_caption_pipeline` 预加载 caption pipeline
+  - `model_ready`（含 `model_initialization_seconds`）
+- **Python**：`captioning` 冷启动时把 `import torch` / `transformers` 与 `pipeline(...)` 放在同一段初始化计时内；新增 `preload_caption_pipeline` 供流式入口预加载。
+- **App**：解析 `model_loading` / `model_ready`；加载阶段展示「正在加载本地模型……」，就绪后写入顶部汇总用的初始化秒数；首张 `progress` 仅在预加载之后发出。若连接旧版 CLI，仍可从首张带非零 `model_initialization_seconds` 的结果回填。
+
 验证情况：
 
 - `python3 -m unittest discover -s tests -v`

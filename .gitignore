@@ -4,5 +4,11 @@ __pycache__/
 
 PhotoAnalyzerApp/.build/
 PhotoAnalyzerApp/PhotoAnalyzer.app/
+PhotoAnalyzerApp/*.zip
 
 tmp_gallery_check/
+.DS_Store
+
+# HF 权重体积大，由 scripts/vend_hf_models.py 填入；保留 models/hf/README.md
+models/hf/*
+!models/hf/README.md

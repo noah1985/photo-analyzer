@@ -21,7 +21,7 @@ Python 侧采用“本地图像描述模型 + 轻量视觉特征”的组合：
 
 - 本地图像描述模型：基于 Hugging Face 的本地 caption 模型
 - 当前默认主力模型：`Salesforce/blip-image-captioning-large`
-- 当前摄影补充模型：`microsoft/git-base-coco`
+- 当前高质量补充模型：`Salesforce/blip2-opt-2.7b`（预设 `photo`），更强一档：`Salesforce/blip2-opt-6.7b`（预设 `git_large`）
 - 视觉特征：亮度、对比度、饱和度、冷暖倾向、清晰度、宽高比
 - 输出结果：基础信息、基础指标、caption、4 组受控标签、中文总结
 - 标签范围来自本地可编辑配置：`photo_analyzer/taxonomy.json`
@@ -31,7 +31,8 @@ Python 侧采用“本地图像描述模型 + 轻量视觉特征”的组合：
 - `fast`：`Salesforce/blip-image-captioning-base`，适合快速初筛
 - `balanced`：`Salesforce/blip-image-captioning-large`，当前默认主力
 - `detailed`：`nlpconnect/vit-gpt2-image-captioning`，自由描述更开放
-- `photo`：`microsoft/git-base-coco`，摄影方向的补充模型，可试，但当前默认仍推荐 `balanced`
+- `photo`：`Salesforce/blip2-opt-2.7b`（BLIP-2），比传统 BLIP 更强，作高质量补充；默认仍推荐 `balanced`
+- `git_large`：`Salesforce/blip2-opt-6.7b`（BLIP-2 更大解码器），强于 `photo` 但更慢、下载与内存更大；默认仍推荐 `balanced`
 
 说明：
 
@@ -41,10 +42,19 @@ Python 侧采用“本地图像描述模型 + 轻量视觉特征”的组合：
 
 若本地图像描述模型不可用，CLI 会自动退回纯规则标签，不会整次分析失败。
 
+**模型文件**：运行时**只从项目内 `models/hf/` 加载**，不会自动联网下载。请在本机执行一次（默认走国内镜像 **hf-mirror.com**）：
+
+```bash
+python3 scripts/vend_hf_models.py
+```
+
+也可先设置 `export HF_ENDPOINT=https://hf-mirror.com` 再运行脚本。自定义权重根目录见 `models/hf/README.md`（`PHOTO_ANALYZER_HF_VENDOR_ROOT`）。
+
 ## 安装
 
 ```bash
 python3 -m pip install -e .
+python3 scripts/vend_hf_models.py
 ```
 
 ## 使用

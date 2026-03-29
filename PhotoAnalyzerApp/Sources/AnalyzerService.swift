@@ -38,7 +38,7 @@ enum StreamEvent {
 }
 
 final class AnalyzerService {
-    static let bundledUIVersion = "1.1.0"
+    static let bundledUIVersion = "1.2.1"
     static let defaultModelKey = "balanced"
     static let availableModels: [CaptionModelOption] = [
         CaptionModelOption(
@@ -62,8 +62,14 @@ final class AnalyzerService {
         CaptionModelOption(
             id: "photo",
             title: "摄影",
-            capability: "摄影方向的补充模型，部分题材更具体，但当前默认仍建议优先使用平衡。",
-            speed: "CPU 下通常 4-12 秒/张。"
+            capability: "BLIP-2（OPT 2.7B），比传统 BLIP 更强的高质量补充；默认仍建议优先使用平衡。",
+            speed: "CPU 下通常 8-25 秒/张，下载与内存占用更高。"
+        ),
+        CaptionModelOption(
+            id: "git_large",
+            title: "BLIP-2 大",
+            capability: "BLIP-2（OPT 6.7B），能力上限更高但更慢、更大；默认仍建议「平衡」。",
+            speed: "CPU 下通常 15-60 秒/张，首次下载大，建议 GPU。"
         ),
     ]
 

@@ -5,6 +5,7 @@ import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 @dataclass(frozen=True)
 class CaptionModelSpec:
@@ -14,9 +15,34 @@ class CaptionModelSpec:
     capability: str
     speed: str
     mode: str = "caption"
+    max_new_tokens: int = 32
 
 
 ProgressCallback = Callable[[dict[str, object]], None]
+
+# 与 scripts/vend_hf_models.py 中子目录名一致（项目 models/hf/<name>）
+VENDOR_DIR_NAMES: dict[str, str] = {
+    "fast": "Salesforce_blip-image-captioning-base",
+    "balanced": "Salesforce_blip-image-captioning-large",
+    "detailed": "nlpconnect_vit-gpt2-image-captioning",
+    "photo": "Salesforce_blip2-opt-2.7b",
+    "git_large": "Salesforce_blip2-opt-6.7b",
+}
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def vendor_hf_root() -> Path:
+    override = os.environ.get("PHOTO_ANALYZER_HF_VENDOR_ROOT", "").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    return _repo_root() / "models" / "hf"
+
+
+def local_model_dir_for_spec(spec: CaptionModelSpec) -> Path:
+    return vendor_hf_root() / VENDOR_DIR_NAMES[spec.key]
 
 
 MODEL_SPECS = {
@@ -44,9 +70,18 @@ MODEL_SPECS = {
     "photo": CaptionModelSpec(
         key="photo",
         label="摄影",
-        model_id="microsoft/git-base-coco",
-        capability="摄影向 caption 补充（GIT COCO），可试；默认仍建议优先用平衡。",
-        speed="CPU 下通常 4-12 秒/张。",
+        model_id="Salesforce/blip2-opt-2.7b",
+        capability="BLIP-2（OPT 2.7B），比传统 BLIP 更强，适合作为高质量补充；默认仍建议优先用平衡。",
+        speed="CPU 下通常 8-25 秒/张，下载与显存/内存占用明显高于平衡。",
+        max_new_tokens=64,
+    ),
+    "git_large": CaptionModelSpec(
+        key="git_large",
+        label="BLIP-2 大",
+        model_id="Salesforce/blip2-opt-6.7b",
+        capability="BLIP-2（OPT 6.7B），能力上限更高但更慢、更大；默认仍建议「平衡」作日常默认。",
+        speed="CPU 下通常 15-60 秒/张，首次下载体积大，建议 GPU。",
+        max_new_tokens=64,
     ),
 }
 DEFAULT_MODEL_KEY = "balanced"
@@ -57,7 +92,7 @@ class CaptioningError(RuntimeError):
 
 
 def available_caption_models() -> list[CaptionModelSpec]:
-    return [MODEL_SPECS[key] for key in ("fast", "balanced", "detailed", "photo")]
+    return [MODEL_SPECS[key] for key in ("fast", "balanced", "detailed", "photo", "git_large")]
 
 
 def resolve_model_spec(model_key: str | None) -> CaptionModelSpec:
@@ -110,76 +145,23 @@ def _emit_progress(callback: ProgressCallback | None, payload: dict[str, object]
         callback(payload)
 
 
-def _ensure_model_downloaded(spec: CaptionModelSpec, progress_callback: ProgressCallback | None = None) -> str:
-    from huggingface_hub import snapshot_download
-    from huggingface_hub.errors import LocalEntryNotFoundError
-    from tqdm.auto import tqdm
-
-    class ProgressTqdm(tqdm):
-        _callback: ProgressCallback | None = None
-        _last_emit_at: float = 0.0
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self._maybe_emit(force=True)
-
-        def update(self, n=1):
-            value = super().update(n)
-            self._maybe_emit()
-            return value
-
-        def close(self):
-            self._maybe_emit(force=True)
-            return super().close()
-
-        def _maybe_emit(self, force: bool = False) -> None:
-            now = time.time()
-            if not force and now - self._last_emit_at < 0.25:
-                return
-            self._last_emit_at = now
-            total = float(self.total or 0)
-            current = float(self.n or 0)
-            percent = round((current / total) * 100, 1) if total > 0 else None
-            eta_seconds = None
-            remaining = self.format_dict.get("remaining")
-            if remaining is not None:
-                try:
-                    eta_seconds = float(remaining)
-                except (TypeError, ValueError):
-                    eta_seconds = None
-            callback = type(self)._callback
-            if callback:
-                callback(
-                    {
-                        "phase": "download",
-                        "status": str(self.desc or spec.model_id),
-                        "current": current,
-                        "total": total if total > 0 else None,
-                        "percent": percent,
-                        "eta_seconds": eta_seconds,
-                    }
-                )
-
-    ProgressTqdm._callback = progress_callback
-
-    try:
-        local_path = snapshot_download(
-            repo_id=spec.model_id,
-            local_files_only=True,
+def resolve_local_vendor_model_path(
+    spec: CaptionModelSpec,
+    progress_callback: ProgressCallback | None = None,
+) -> str:
+    """仅使用项目（或 PHOTO_ANALYZER_HF_VENDOR_ROOT）下已存在的快照，不发起下载。"""
+    d = local_model_dir_for_spec(spec)
+    cfg = d / "config.json"
+    if not cfg.is_file():
+        raise CaptioningError(
+            "本地模型未就绪：缺少 "
+            f"{cfg}。请在项目根执行：python3 scripts/vend_hf_models.py（默认使用 hf-mirror.com）"
         )
-        _emit_progress(
-            progress_callback,
-            {"phase": "cache", "status": "已命中本地模型缓存"},
-        )
-        return local_path
-    except LocalEntryNotFoundError:
-        pass
-
-    return snapshot_download(
-        repo_id=spec.model_id,
-        resume_download=True,
-        tqdm_class=ProgressTqdm,
+    _emit_progress(
+        progress_callback,
+        {"phase": "cache", "status": f"使用本地模型 {d.name}"},
     )
+    return str(d.resolve())
 
 
 def _caption_pipeline(model_key: str, progress_callback: ProgressCallback | None = None):
@@ -192,7 +174,7 @@ def _caption_pipeline(model_key: str, progress_callback: ProgressCallback | None
         return _PIPELINE_CACHE[spec.key]
 
     started_at = time.perf_counter()
-    local_path = _ensure_model_downloaded(spec, progress_callback)
+    local_path = resolve_local_vendor_model_path(spec, progress_callback)
     _emit_progress(progress_callback, {"phase": "load", "status": "正在加载模型到内存"})
     import torch
     from transformers import pipeline
@@ -237,7 +219,7 @@ def generate_caption(image_path: str, model_key: str | None = None) -> str:
         with Image.open(image_path) as image:
             rgb = image.convert("RGB")
             captioner = _caption_pipeline(spec.key)
-            output = captioner(rgb, max_new_tokens=32)
+            output = captioner(rgb, max_new_tokens=spec.max_new_tokens)
     except CaptioningError:
         raise
     except Exception as exc:  # pragma: no cover - runtime/model IO

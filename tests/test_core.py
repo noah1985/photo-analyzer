@@ -7,10 +7,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from huggingface_hub.errors import LocalEntryNotFoundError
 from PIL import Image
 
-from photo_analyzer.captioning import MODEL_SPECS, _ensure_model_downloaded, available_caption_models
+from photo_analyzer.captioning import (
+    MODEL_SPECS,
+    CaptioningError,
+    available_caption_models,
+    resolve_local_vendor_model_path,
+)
 from photo_analyzer.cli import build_gallery_item, format_result
 from photo_analyzer.core import (
     ANALYSIS_VERSION,
@@ -40,31 +44,34 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertTrue(any(item.label == "黑白倾向" for item in definitions))
 
     def test_photo_model_preset_exists(self) -> None:
-        self.assertIn("photo", [item.key for item in available_caption_models()])
+        keys = [item.key for item in available_caption_models()]
+        self.assertIn("photo", keys)
+        self.assertIn("git_large", keys)
 
-    @patch("huggingface_hub.snapshot_download")
-    def test_model_download_uses_local_cache_when_available(self, mock_snapshot_download: object) -> None:
-        mock_snapshot_download.return_value = "/tmp/hf-cache/model"
+    def test_local_vendor_model_path_requires_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict(os.environ, {"PHOTO_ANALYZER_HF_VENDOR_ROOT": tmp}):
+                with self.assertRaises(CaptioningError) as ctx:
+                    resolve_local_vendor_model_path(MODEL_SPECS["balanced"])
+                self.assertIn("vend_hf_models.py", str(ctx.exception))
 
-        path = _ensure_model_downloaded(MODEL_SPECS["balanced"])
+    def test_local_vendor_model_path_ok_with_config_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sub = Path(tmp) / "Salesforce_blip-image-captioning-large"
+            sub.mkdir()
+            (sub / "config.json").write_text('{"_test": true}', encoding="utf-8")
+            with patch.dict(os.environ, {"PHOTO_ANALYZER_HF_VENDOR_ROOT": tmp}):
+                path = resolve_local_vendor_model_path(MODEL_SPECS["balanced"])
+                self.assertEqual(Path(path).resolve(), sub.resolve())
 
-        self.assertEqual(path, "/tmp/hf-cache/model")
-        mock_snapshot_download.assert_called_once_with(
-            repo_id=MODEL_SPECS["balanced"].model_id,
-            local_files_only=True,
-        )
-
-    @patch("huggingface_hub.snapshot_download")
-    def test_model_download_falls_back_to_remote_when_cache_missing(self, mock_snapshot_download: object) -> None:
-        mock_snapshot_download.side_effect = [
-            LocalEntryNotFoundError("missing"),
-            "/tmp/hf-cache/model",
-        ]
-
-        path = _ensure_model_downloaded(MODEL_SPECS["balanced"])
-
-        self.assertEqual(path, "/tmp/hf-cache/model")
-        self.assertEqual(mock_snapshot_download.call_count, 2)
+    def test_local_vendor_model_path_ok_for_git_large(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sub = Path(tmp) / "Salesforce_blip2-opt-6.7b"
+            sub.mkdir()
+            (sub / "config.json").write_text('{"_test": true}', encoding="utf-8")
+            with patch.dict(os.environ, {"PHOTO_ANALYZER_HF_VENDOR_ROOT": tmp}):
+                path = resolve_local_vendor_model_path(MODEL_SPECS["git_large"])
+                self.assertEqual(Path(path).resolve(), sub.resolve())
 
     def test_missing_file_raises_error(self) -> None:
         with self.assertRaises(AnalysisError):
@@ -157,6 +164,22 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertTrue(
             "街拍人物" in result.tag_groups["subject_content"] or "街拍" in result.tag_groups["subject_content"]
         )
+
+    @patch(
+        "photo_analyzer.core.generate_caption",
+        return_value="a dog running on a beach at sunset with dramatic clouds",
+    )
+    def test_git_large_model_uses_caption_mapping(self, _mock_caption: object) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "x.png"
+            Image.new("RGB", (100, 80), (200, 160, 120)).save(path)
+            result = analyze_image(str(path), model_key="git_large")
+
+        self.assertEqual(result.caption_model, "git_large")
+        self.assertEqual(result.caption_model_label, "BLIP-2 大")
+        self.assertEqual(result.caption, "a dog running on a beach at sunset with dramatic clouds")
+        self.assertIn("宠物", result.tag_groups["subject_content"])
+        self.assertIn("海边", result.tag_groups["scene_lighting"])
 
     def test_missing_taxonomy_raises_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -338,6 +361,32 @@ class PhotoAnalyzerTests(unittest.TestCase):
         self.assertNotIn("横幅感", completed.stdout)
         self.assertNotIn("CLIP", completed.stdout)
 
+    def test_cli_analyze_accepts_git_large_model(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "x.png"
+            Image.new("RGB", (48, 48), (90, 90, 90)).save(path)
+            env = os.environ.copy()
+            env.update(TEST_ENV)
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "photo_analyzer",
+                    "analyze",
+                    str(path),
+                    "--model",
+                    "git_large",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                cwd=Path(__file__).resolve().parents[1],
+                env=env,
+            )
+        self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+        self.assertIn("BLIP-2 大", completed.stdout)
+        self.assertIn("git_large", completed.stdout)
+
     def test_cli_version_flag(self) -> None:
         completed = subprocess.run(
             [sys.executable, "-m", "photo_analyzer", "--version"],
@@ -347,7 +396,7 @@ class PhotoAnalyzerTests(unittest.TestCase):
             cwd=Path(__file__).resolve().parents[1],
         )
         self.assertEqual(completed.returncode, 0, msg=completed.stderr)
-        self.assertIn("1.1.0", completed.stdout)
+        self.assertIn("1.2.1", completed.stdout)
 
     def test_cli_accepts_directory_for_batch_analysis(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

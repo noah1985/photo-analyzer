@@ -18,6 +18,6 @@
 当前结论摘要：
 
 - 默认稳态模型仍然是 `balanced`
-- `photo` 已收敛为 `microsoft/git-base-coco`
+- `photo` 使用 `Salesforce/blip2-opt-2.7b`；`git_large` 使用 `Salesforce/blip2-opt-6.7b`（v1.2.1 起替换原 GIT COCO，预设 key 未改）
 - 小型结构化多模态模型实验已经停止，不再作为主实现
 - 当前主流程是：`图片 -> caption -> taxonomy 映射 -> 分组标签 -> 中文总结`

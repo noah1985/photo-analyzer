@@ -4,7 +4,7 @@
 
 当前 `photo` 预设已经不再使用历史的小型 VLM 路线，而是：
 
-- `microsoft/git-base-coco`
+- `Salesforce/blip2-opt-2.7b`（BLIP-2）
 - 工作方式：`caption -> taxonomy 映射`
 
 所以本文件中的前几项问题，主要是在说明历史试验为何被放弃，而不是在描述当前 `photo` 的运行状态。
@@ -25,7 +25,7 @@
 结论：
 
 - 当前项目不再继续以小型结构化 VLM 作为主方案
-- 现已收敛为 `microsoft/git-base-coco`
+- 现已收敛为传统 caption；`photo` / `git_large` 使用 BLIP-2（见 [MODELS.md](MODELS.md)）
 
 ## Historical: `photo` 模型下载后崩溃
 
@@ -97,18 +97,18 @@
 - 当前已不再保留这条复杂回退结构
 - 直接回归更稳定的模型实现，减少分支复杂度
 
-## Current: `photo` 仍未稳定压过 `balanced`
+## Current: `photo` / `git_large` 仍未默认取代 `balanced`
 
 现象：
 
-- `photo` 已经从实验性 VLM 收敛到 `microsoft/git-base-coco`
-- 真实样本上它通常比历史实验版更稳、更快
-- 但从当前样本回归看，仍然没有稳定优于 `balanced`
+- `photo` 已从实验性 VLM 与 GIT 收敛到 **BLIP-2 opt 2.7B**；`git_large` 为 **BLIP-2 opt 6.7B**（预设 key 未改以保持兼容）
+- 真实样本上通常优于已移除的 GIT COCO，但是否稳定优于 `balanced` 仍因题材而异
+- CPU 下 BLIP-2 两档明显更慢、更重
 
 结论：
 
-- 当前默认推荐顺序仍然是：`balanced -> photo -> fast -> detailed`
-- `photo` 是可试选项，不应在对外文案中描述成“确定更准”
+- 当前默认推荐顺序仍然是：`balanced -> photo（高质量补充）-> git_large（更重、建议 GPU）-> fast -> detailed`（详见 [MODELS.md](MODELS.md)）
+- `photo` / `git_large` 是可试选项，不应在对外文案中描述成“确定更准”
 
 ## 7. taxonomy 规则扩展后容易出现泛化标签
 

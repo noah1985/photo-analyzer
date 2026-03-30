@@ -19,7 +19,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-# 默认与 technical_notes 中示例一致；可用参数或环境变量覆盖
+# 默认图集根目录；可用参数或环境变量覆盖
 _DEFAULT_IMAGE_ROOT = "/Users/Noah/Pictures/分享输出"
 _EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".JPG", ".JPEG", ".PNG", ".WEBP"}
 
@@ -101,7 +101,7 @@ def main() -> None:
         "--out",
         type=Path,
         default=None,
-        help="输出目录（默认 technical_notes/eval_runs/<timestamp>_random_<R>x<P>_<model>）",
+        help="输出目录（默认 var/eval_runs/<timestamp>_random_<R>x<P>_<model>）",
     )
     parser.add_argument("--rounds", type=int, default=5)
     parser.add_argument("--per-round", type=int, default=5)
@@ -128,7 +128,7 @@ def main() -> None:
         stamp = time.strftime("%Y%m%d_%H%M%S")
         out_dir = (
             repo_root
-            / "technical_notes"
+            / "var"
             / "eval_runs"
             / f"{stamp}_random_{args.rounds}x{args.per_round}_{args.model}"
         )

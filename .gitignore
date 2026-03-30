@@ -8,8 +8,8 @@ PhotoAnalyzerApp/*.zip
 
 tmp_gallery_check/
 
-# 本地评测产物（含绝对路径与 caption），可重复运行 scripts/run_eval_five_rounds_random.py 生成
-technical_notes/eval_runs/
+# 本地生成物（评测 JSON、manifest 等；可重复运行 scripts/run_eval_five_rounds_random.py）
+var/
 
 # 根目录临时评测 JSON/JSONL（勿提交）
 /tmp_*.jsonl

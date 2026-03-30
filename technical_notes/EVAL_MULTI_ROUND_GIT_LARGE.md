@@ -259,7 +259,7 @@ PYTHONPATH=. python3 scripts/run_eval_five_rounds_random.py --rounds 10 --model 
 ### 10.2 产出目录结构（每次运行新建时间戳子目录）
 
 ```text
-technical_notes/eval_runs/<YYYYMMDD_HHMMSS>_random_5x5/
+var/eval_runs/<YYYYMMDD_HHMMSS>_random_5x5/
   meta.json                 # 种子、耗时、启发式标记统计
   SUMMARY.md                # 跨轮汇总（重复文件、各轮文件名、后续步骤）
   round_01_manifest.json    # 第 1 轮绝对路径 + seed
@@ -268,12 +268,12 @@ technical_notes/eval_runs/<YYYYMMDD_HHMMSS>_random_5x5/
   ... round_02 ... round_05 ...
 ```
 
-`eval_runs/` 已列入仓库 **`.gitignore`**（含用户路径与描述文本）；需要留档时在本地复制 `SUMMARY.md` 脱敏后另存，或改 `--out` 到非忽略路径。
+`var/`（含 `var/eval_runs/`）已列入仓库 **`.gitignore`**（含用户路径与描述文本）；需要留档时在本地复制 `SUMMARY.md` 脱敏后另存，或改 `--out` 到非忽略路径。
 
 ### 10.3 已做的一次示例跑通（本机）
 
 - 命令：`PYTHONPATH=. python3 scripts/run_eval_five_rounds_random.py`  
-- 结果目录：`technical_notes/eval_runs/20260330_094103_random_5x5/`（仅本机磁盘，不提交 Git）  
+- 结果目录：`var/eval_runs/20260330_094103_random_5x5/`（仅本机磁盘，不提交 Git；目录名仅为历史示例）  
 - 规模：25 条推理，约 **129s**（CPU，`git_large` 单进程加载一次）  
 - 启发式扫到：**题材为空** 2 条；25 张文件名跨轮无重复。  
 

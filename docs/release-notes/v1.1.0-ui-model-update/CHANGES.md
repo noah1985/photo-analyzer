@@ -105,6 +105,6 @@
 - `PhotoAnalyzerApp/Sources/AnalyzerService.swift` → `bundledUIVersion`
 - `PhotoAnalyzerApp/build_app.sh` 生成的 `Info.plist` → `CFBundleShortVersionString`
 
-技术说明目录：[technical_notes/](../../technical_notes/README.md)。
+技术说明目录：[technical_notes/](../../../technical_notes/README.md)。
 
 推送远程与 `git tag v1.1.0` 按需执行。

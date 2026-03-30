@@ -15,7 +15,7 @@
 - [ARCHITECTURE.md](ARCHITECTURE.md)
   Python CLI、Swift App、taxonomy 和输出链路的整体结构。
 - [EVAL_MULTI_ROUND_GIT_LARGE.md](EVAL_MULTI_ROUND_GIT_LARGE.md)
-  固定样本 + `git_large` 多轮实测、逐轮校正、落盘约定与接手步骤（给其他 agent 用）；附录含 **五轮随机 5 张** 脚本 `scripts/run_eval_five_rounds_random.py`（产物在 `technical_notes/eval_runs/`，已 gitignore）。
+  固定样本 + `git_large` 多轮实测、逐轮校正、落盘约定与接手步骤（给其他 agent 用）；附录含 **五轮随机 5 张** 脚本 `scripts/run_eval_five_rounds_random.py`（默认产物在 `var/eval_runs/`，已 gitignore）。
 
 当前结论摘要：
 

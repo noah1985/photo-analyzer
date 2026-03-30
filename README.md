@@ -9,18 +9,18 @@ Python 侧采用“本地图像描述模型 + 轻量视觉特征”的组合：
 
 - 本地图像描述模型：基于 Hugging Face 的本地 caption 模型
 - 当前默认主力模型：`Salesforce/blip-image-captioning-large`
-- 当前高质量补充模型：`Salesforce/blip2-opt-2.7b`（预设 `photo`），更强一档：`Salesforce/blip2-opt-6.7b`（预设 `git_large`）
+- 当前高质量补充模型：`Salesforce/blip2-opt-2.7b`（预设 `blip2_2_7b`），更强一档：`Salesforce/blip2-opt-6.7b`（预设 `blip2_6_7b`）
 - 视觉特征：亮度、对比度、饱和度、冷暖倾向、清晰度、宽高比
 - 输出结果：基础信息、基础指标、caption、4 组受控标签、中文总结
 - 标签范围来自本地可编辑配置：`photo_analyzer/taxonomy.json`
 
-模型预设：
+模型预设（`--model`，与 App 下拉一致；旧名 `fast` / `balanced` / `photo` / `git_large` 等仍可作为别名使用）：
 
-- `fast`：`Salesforce/blip-image-captioning-base`，适合快速初筛
-- `balanced`：`Salesforce/blip-image-captioning-large`，当前默认主力
-- `detailed`：`nlpconnect/vit-gpt2-image-captioning`，自由描述更开放
-- `photo`：`Salesforce/blip2-opt-2.7b`（BLIP-2），比传统 BLIP 更强，作高质量补充；默认仍推荐 `balanced`
-- `git_large`：`Salesforce/blip2-opt-6.7b`（BLIP-2 更大解码器），强于 `photo` 但更慢、下载与内存更大；默认仍推荐 `balanced`
+- `blip_base`：`Salesforce/blip-image-captioning-base`，适合快速初筛
+- `blip_large`：`Salesforce/blip-image-captioning-large`，**默认主力**
+- `vit_gpt2`：`nlpconnect/vit-gpt2-image-captioning`，自由描述更开放
+- `blip2_2_7b`：`Salesforce/blip2-opt-2.7b`（BLIP-2），高质量补充；默认仍推荐 `blip_large`
+- `blip2_6_7b`：`Salesforce/blip2-opt-6.7b`（BLIP-2 更大解码器），强于 `blip2_2_7b` 但更慢；默认仍推荐 `blip_large`
 
 说明：
 
@@ -85,7 +85,7 @@ Python 分析链路的最终标签严格限制在 [photo_analyzer/taxonomy.json]
 
 这份配置按四组组织（**仅**下列中文 `label`，勿在 taxonomy 中增加未列出项）：
 
-- `subject_content`（题材 / 内容）：人像、建筑、风光、食物、动物、运动
+- `subject_content`（题材 / 内容）：人像、建筑、风光、食物、花卉、动物、运动
 - `composition_distance`（构图 / 景别）：特写、近景、宽景、对称、主体突出、**微距**（可与题材「动物」等同时出现；每组仍最多 2 个标签）
 - `scene_lighting`（场景 / 光线）：室内、室外、夜景、日落、低光、逆光
 - `style_impression`（色调倾向）：暖色调、冷色调、黑白、高对比、低对比、高饱和、低饱和、明亮

@@ -216,5 +216,6 @@ struct PhotoResult: Identifiable {
     let analysisDurationSeconds: Double
     let tagGroups: TagGroups
     let tags: [String]
-    let summary: String
+    /// 本地 caption 模型英文描述（卡片上仅展示此项，不含中文总结）
+    let caption: String
 }

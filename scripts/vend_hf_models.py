@@ -21,6 +21,12 @@ REPO_SNAPSHOTS: list[tuple[str, str]] = [
 ]
 
 PRESET_TO_REPO: dict[str, tuple[str, str]] = {
+    "blip_base": REPO_SNAPSHOTS[0],
+    "blip_large": REPO_SNAPSHOTS[1],
+    "vit_gpt2": REPO_SNAPSHOTS[2],
+    "blip2_2_7b": REPO_SNAPSHOTS[3],
+    "blip2_6_7b": REPO_SNAPSHOTS[4],
+    # 旧 id（与 captioning._LEGACY_MODEL_ALIASES 一致）
     "fast": REPO_SNAPSHOTS[0],
     "balanced": REPO_SNAPSHOTS[1],
     "detailed": REPO_SNAPSHOTS[2],
@@ -35,7 +41,7 @@ def main() -> int:
         "--only",
         action="append",
         choices=sorted(PRESET_TO_REPO.keys()),
-        help="只下载指定预设（可多次指定），例如 --only photo",
+        help="只下载指定预设（可多次指定），例如 --only blip2_2_7b",
     )
     parser.add_argument(
         "--endpoint",

@@ -15,8 +15,8 @@ python3 scripts/vend_hf_models.py
 若某次网络/SSL 中断，可只补下缺的预设，例如：
 
 ```bash
-python3 scripts/vend_hf_models.py --only photo
-python3 scripts/vend_hf_models.py --only git_large
+python3 scripts/vend_hf_models.py --only blip2_2_7b
+python3 scripts/vend_hf_models.py --only blip2_6_7b
 ```
 
 指定其它镜像端点：
@@ -27,17 +27,19 @@ python3 scripts/vend_hf_models.py --endpoint https://hf-mirror.com
 
 从 v1.2.1 起，若你本机仍留有旧的 **`microsoft_git-*-coco`** 目录，可删除后按上表重新 vend；当前预设已不再使用 GIT。
 
-`git_large`（6.7B）等大仓库在下载过程中，部分分片可能经 Hugging Face 的存储中转域名拉取；若出现 SSL 中断，**重复执行** `vend_hf_models.py --only git_large` 即可续传。
+`blip2_6_7b`（6.7B）等大仓库在下载过程中，部分分片可能经 Hugging Face 的存储中转域名拉取；若出现 SSL 中断，**重复执行** `vend_hf_models.py --only blip2_6_7b`（或旧别名 `--only git_large`）即可续传。
 
 ## 目录与预设对应关系
 
 | 预设 key | 子目录名 |
 |----------|----------|
-| `fast` | `Salesforce_blip-image-captioning-base` |
-| `balanced` | `Salesforce_blip-image-captioning-large` |
-| `detailed` | `nlpconnect_vit-gpt2-image-captioning` |
-| `photo` | `Salesforce_blip2-opt-2.7b` |
-| `git_large` | `Salesforce_blip2-opt-6.7b` |
+| `blip_base` | `Salesforce_blip-image-captioning-base` |
+| `blip_large` | `Salesforce_blip-image-captioning-large` |
+| `vit_gpt2` | `nlpconnect_vit-gpt2-image-captioning` |
+| `blip2_2_7b` | `Salesforce_blip2-opt-2.7b` |
+| `blip2_6_7b` | `Salesforce_blip2-opt-6.7b` |
+
+`--only` 仍接受旧 key（`fast`、`balanced`、`photo`、`git_large` 等），与 `captioning.py` 别名一致。
 
 ## 覆盖路径（测试或自定义）
 

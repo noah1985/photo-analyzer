@@ -212,12 +212,20 @@ class DesktopGalleryApp:
                 justify="left",
             ).grid(row=1, column=0, sticky="w", pady=(8, 6))
 
+            caption_text = (result.caption or "").strip() or "—"
+            ttk.Label(
+                card,
+                text=caption_text,
+                wraplength=240,
+                justify="left",
+            ).grid(row=2, column=0, sticky="w", pady=(0, 6))
+
             ttk.Label(
                 card,
                 text="  ".join(build_card_tags(result)),
                 wraplength=240,
                 justify="left",
-            ).grid(row=2, column=0, sticky="w")
+            ).grid(row=3, column=0, sticky="w")
 
         self.run_button.state(["!disabled"])
         self._running = False

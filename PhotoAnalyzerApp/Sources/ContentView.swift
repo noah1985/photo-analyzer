@@ -79,7 +79,7 @@ private struct ToolbarArea: View {
                     }
                 }
                 .pickerStyle(.menu)
-                .frame(width: 110)
+                .frame(minWidth: 168, alignment: .leading)
 
                 Button(action: state.startAnalysis) {
                     HStack(spacing: 5) {
@@ -117,6 +117,7 @@ private struct ToolbarArea: View {
             Text("模型说明：\(state.selectedModelOption.capability) \(state.selectedModelOption.speed)")
                 .font(.system(size: 12))
                 .foregroundStyle(LightTheme.textMuted)
+                .lineLimit(3)
 
             if !state.batchSummary.isEmpty {
                 Text("本次分析：\(state.batchSummary)")
@@ -457,7 +458,7 @@ private struct PhotoCard: View {
                     .foregroundStyle(LightTheme.textMuted)
             }
 
-            Text(result.summary)
+            Text(result.caption.isEmpty ? "—" : result.caption)
                 .font(.system(size: 12))
                 .foregroundStyle(LightTheme.textMuted)
                 .multilineTextAlignment(.leading)

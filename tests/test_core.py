@@ -13,6 +13,7 @@ from photo_analyzer.captioning import (
     MODEL_SPECS,
     CaptioningError,
     available_caption_models,
+    normalize_model_key,
     resolve_local_vendor_model_path,
 )
 from photo_analyzer.cli import build_gallery_item, format_result
@@ -42,6 +43,7 @@ ALLOWED_TAXONOMY_LABELS = frozenset(
         "建筑",
         "风光",
         "食物",
+        "花卉",
         "动物",
         "运动",
         "微距",
@@ -67,7 +69,7 @@ ALLOWED_TAXONOMY_LABELS = frozenset(
     }
 )
 
-TEST_ENV = {"PHOTO_ANALYZER_CAPTION_OVERRIDE": "a warm portrait photo indoors"}
+TEST_ENV = {"PHOTO_ANALYZER_CAPTION_OVERRIDE": "a portrait with warm light indoors"}
 
 
 # ---------------------------------------------------------------------------
@@ -117,10 +119,10 @@ class TestScoringAndSelection(unittest.TestCase):
         scores = score_all_tags(taxonomy, _quick_signals("two women holding up a lighted object"))
         self.assertGreater(scores.get("人像", 0), 0)
 
-    def test_flowers_caption_scores_landscape(self) -> None:
+    def test_flowers_caption_scores_floral(self) -> None:
         taxonomy = load_taxonomy()
         scores = score_all_tags(taxonomy, _quick_signals("pink flowers in the garden"))
-        self.assertGreater(scores.get("风光", 0), 0)
+        self.assertGreater(scores.get("花卉", 0), 0)
 
     def test_conflict_indoor_outdoor(self) -> None:
         taxonomy = load_taxonomy()
@@ -208,10 +210,10 @@ class TestAnalyzeImagePipeline(unittest.TestCase):
         )
         self.assertIn("人像", r.tag_groups["subject_content"])
 
-    def test_roses_map_to_landscape_no_conflicting_close(self) -> None:
+    def test_roses_map_to_floral_no_conflicting_close(self) -> None:
         r = _analyze_caption("a close up of two red roses on a stem",
                              color=(90, 40, 50))
-        self.assertIn("风光", r.tag_groups["subject_content"])
+        self.assertIn("花卉", r.tag_groups["subject_content"])
         comp = set(r.tag_groups["composition_distance"])
         self.assertFalse(comp >= {"特写", "近景"})
 
@@ -280,11 +282,11 @@ class TestAnalyzeImagePipeline(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = _make_image(tmpdir, (50, 40), (190, 120, 80))
             with patch("photo_analyzer.core.generate_caption",
-                       return_value="a warm portrait photo indoors"):
+                       return_value="a portrait with warm light indoors"):
                 result = analyze_image(path)
 
         self.assertEqual(result.image.orientation, "横图")
-        self.assertEqual(result.caption, "a warm portrait photo indoors")
+        self.assertEqual(result.caption, "a portrait with warm light indoors")
         self.assertIn("人像", result.tag_groups["subject_content"])
         self.assertIn("室内", result.tag_groups["scene_lighting"])
         self.assertIn("暖色调", result.tag_groups["style_impression"])
@@ -320,22 +322,28 @@ class TestAnalyzeImagePipeline(unittest.TestCase):
         self.assertIn("运动", r.tag_groups["subject_content"])
         self.assertIn("黑白", r.tag_groups["style_impression"])
 
-    def test_photo_model_key_uses_caption_mapping(self) -> None:
+    def test_blip2_2_7b_model_key_uses_caption_mapping(self) -> None:
         r = _analyze_caption("a documentary portrait at a street stall",
                              size=(90, 140), color=(120, 120, 120),
-                             model_key="photo")
-        self.assertEqual(r.caption_model, "photo")
+                             model_key="blip2_2_7b")
+        self.assertEqual(r.caption_model, "blip2_2_7b")
         self.assertIn("人像", r.tag_groups["subject_content"])
         self.assertLessEqual(len(r.tag_groups["style_impression"]), 2)
 
-    def test_git_large_model_key_uses_caption_mapping(self) -> None:
+    def test_legacy_photo_alias_normalizes_to_blip2_2_7b(self) -> None:
+        r = _analyze_caption("a documentary portrait at a street stall",
+                             size=(90, 140), color=(120, 120, 120),
+                             model_key="photo")
+        self.assertEqual(r.caption_model, "blip2_2_7b")
+
+    def test_blip2_6_7b_model_key_uses_caption_mapping(self) -> None:
         r = _analyze_caption(
             "a dog running on a beach at sunset with dramatic clouds",
             size=(100, 80), color=(200, 160, 120),
-            model_key="git_large",
+            model_key="blip2_6_7b",
         )
-        self.assertEqual(r.caption_model, "git_large")
-        self.assertEqual(r.caption_model_label, "BLIP-2 大")
+        self.assertEqual(r.caption_model, "blip2_6_7b")
+        self.assertEqual(r.caption_model_label, "BLIP-2 6.7B（超慢）")
         self.assertTrue(
             bool(set(r.tag_groups["subject_content"]) & {"动物", "风光"}),
         )
@@ -347,12 +355,12 @@ class TestAnalyzeImagePipeline(unittest.TestCase):
 
 class TestTaxonomy(unittest.TestCase):
 
-    def test_loads_four_groups_and_26_tags(self) -> None:
+    def test_loads_four_groups_and_tag_count(self) -> None:
         taxonomy = load_taxonomy()
         self.assertEqual(taxonomy.version, 2)
         self.assertEqual(len(taxonomy.groups), 4)
         self.assertEqual({g.name for g in taxonomy.groups}, set(TAG_GROUP_ORDER))
-        self.assertEqual(len(taxonomy.tags), 26)
+        self.assertEqual(len(taxonomy.tags), 27)
         labels = {t.label for t in taxonomy.tags}
         self.assertTrue(labels <= ALLOWED_TAXONOMY_LABELS)
 
@@ -391,7 +399,7 @@ class TestTaxonomy(unittest.TestCase):
                               encoding="utf-8")
             with patch("photo_analyzer.core.taxonomy_path", return_value=custom):
                 with patch("photo_analyzer.core.generate_caption",
-                           return_value="a warm portrait photo indoors"):
+                           return_value="a portrait with warm light indoors"):
                     path = _make_image(tmpdir, (50, 40), (190, 120, 80))
                     result = analyze_image(path)
         self.assertNotIn("暖色调", result.tags)
@@ -403,16 +411,23 @@ class TestTaxonomy(unittest.TestCase):
 
 class TestCaptioning(unittest.TestCase):
 
-    def test_photo_and_git_large_presets_exist(self) -> None:
+    def test_model_preset_keys(self) -> None:
         keys = [item.key for item in available_caption_models()]
-        self.assertIn("photo", keys)
-        self.assertIn("git_large", keys)
+        self.assertEqual(
+            keys,
+            ["blip_base", "blip_large", "vit_gpt2", "blip2_2_7b", "blip2_6_7b"],
+        )
+
+    def test_normalize_legacy_model_aliases(self) -> None:
+        self.assertEqual(normalize_model_key("fast"), "blip_base")
+        self.assertEqual(normalize_model_key("balanced"), "blip_large")
+        self.assertEqual(normalize_model_key("git_large"), "blip2_6_7b")
 
     def test_vendor_path_requires_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             with patch.dict(os.environ, {"PHOTO_ANALYZER_HF_VENDOR_ROOT": tmp}):
                 with self.assertRaises(CaptioningError) as ctx:
-                    resolve_local_vendor_model_path(MODEL_SPECS["balanced"])
+                    resolve_local_vendor_model_path(MODEL_SPECS["blip_large"])
                 self.assertIn("vend_hf_models.py", str(ctx.exception))
 
     def test_vendor_path_ok_with_config_json(self) -> None:
@@ -421,16 +436,16 @@ class TestCaptioning(unittest.TestCase):
             sub.mkdir()
             (sub / "config.json").write_text('{"_test": true}', encoding="utf-8")
             with patch.dict(os.environ, {"PHOTO_ANALYZER_HF_VENDOR_ROOT": tmp}):
-                path = resolve_local_vendor_model_path(MODEL_SPECS["balanced"])
+                path = resolve_local_vendor_model_path(MODEL_SPECS["blip_large"])
                 self.assertEqual(Path(path).resolve(), sub.resolve())
 
-    def test_vendor_path_ok_for_git_large(self) -> None:
+    def test_vendor_path_ok_for_blip2_6_7b(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sub = Path(tmp) / "Salesforce_blip2-opt-6.7b"
             sub.mkdir()
             (sub / "config.json").write_text('{"_test": true}', encoding="utf-8")
             with patch.dict(os.environ, {"PHOTO_ANALYZER_HF_VENDOR_ROOT": tmp}):
-                path = resolve_local_vendor_model_path(MODEL_SPECS["git_large"])
+                path = resolve_local_vendor_model_path(MODEL_SPECS["blip2_6_7b"])
                 self.assertEqual(Path(path).resolve(), sub.resolve())
 
     def test_missing_file_raises_error(self) -> None:
@@ -456,8 +471,8 @@ class TestCLI(unittest.TestCase):
                 temperature="偏暖", sharpness=8.2,
             ),
             caption="warm indoor portrait",
-            caption_model="balanced",
-            caption_model_label="平衡",
+            caption_model="blip_large",
+            caption_model_label="BLIP-L（较快）",
             model_initialization_seconds=0.0,
             analysis_duration_seconds=1.23,
             tag_groups={
@@ -489,8 +504,8 @@ class TestCLI(unittest.TestCase):
                 temperature="中性", sharpness=7.0,
             ),
             caption="a cup on a table",
-            caption_model="fast",
-            caption_model_label="快速",
+            caption_model="blip_base",
+            caption_model_label="BLIP-B（快）",
             model_initialization_seconds=0.0,
             analysis_duration_seconds=0.84,
             tag_groups={
@@ -520,8 +535,8 @@ class TestCLI(unittest.TestCase):
                 temperature="中性", sharpness=7.0,
             ),
             caption="",
-            caption_model="balanced",
-            caption_model_label="平衡",
+            caption_model="blip_large",
+            caption_model_label="BLIP-L（较快）",
             model_initialization_seconds=0.0,
             analysis_duration_seconds=0.12,
             tag_groups={group: [] for group in TAG_GROUP_ORDER},
@@ -548,7 +563,21 @@ class TestCLI(unittest.TestCase):
         self.assertIn("总体判断：", completed.stdout)
         self.assertIn("题材 / 内容", completed.stdout)
 
-    def test_cli_analyze_accepts_git_large_model(self) -> None:
+    def test_cli_analyze_accepts_blip2_6_7b_model(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = _make_image(tmpdir, (48, 48), (90, 90, 90))
+            env = {**os.environ, **TEST_ENV}
+            completed = subprocess.run(
+                [sys.executable, "-m", "photo_analyzer", "analyze", path,
+                 "--model", "blip2_6_7b"],
+                capture_output=True, text=True, check=False,
+                cwd=Path(__file__).resolve().parents[1], env=env,
+            )
+        self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+        self.assertIn("BLIP-2 6.7B（超慢）", completed.stdout)
+        self.assertIn("blip2_6_7b", completed.stdout)
+
+    def test_cli_legacy_git_large_alias_still_works(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = _make_image(tmpdir, (48, 48), (90, 90, 90))
             env = {**os.environ, **TEST_ENV}
@@ -559,7 +588,7 @@ class TestCLI(unittest.TestCase):
                 cwd=Path(__file__).resolve().parents[1], env=env,
             )
         self.assertEqual(completed.returncode, 0, msg=completed.stderr)
-        self.assertIn("BLIP-2 大", completed.stdout)
+        self.assertIn("blip2_6_7b", completed.stdout)
 
     def test_cli_version_flag(self) -> None:
         completed = subprocess.run(
@@ -568,7 +597,7 @@ class TestCLI(unittest.TestCase):
             cwd=Path(__file__).resolve().parents[1],
         )
         self.assertEqual(completed.returncode, 0, msg=completed.stderr)
-        self.assertIn("1.2.1", completed.stdout)
+        self.assertIn("1.2.4", completed.stdout)
 
     def test_cli_accepts_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

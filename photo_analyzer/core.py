@@ -18,7 +18,7 @@ from .captioning import (
 )
 
 
-ANALYSIS_VERSION = "1.2.1"
+ANALYSIS_VERSION = "1.2.4"
 SUPPORTED_FORMATS = {"JPEG", "PNG", "WEBP", "BMP", "GIF", "TIFF"}
 TAG_GROUP_ORDER = (
     "subject_content",

@@ -22,11 +22,20 @@ ProgressCallback = Callable[[dict[str, object]], None]
 
 # 与 scripts/vend_hf_models.py 中子目录名一致（项目 models/hf/<name>）
 VENDOR_DIR_NAMES: dict[str, str] = {
-    "fast": "Salesforce_blip-image-captioning-base",
-    "balanced": "Salesforce_blip-image-captioning-large",
-    "detailed": "nlpconnect_vit-gpt2-image-captioning",
-    "photo": "Salesforce_blip2-opt-2.7b",
-    "git_large": "Salesforce_blip2-opt-6.7b",
+    "blip_base": "Salesforce_blip-image-captioning-base",
+    "blip_large": "Salesforce_blip-image-captioning-large",
+    "vit_gpt2": "nlpconnect_vit-gpt2-image-captioning",
+    "blip2_2_7b": "Salesforce_blip2-opt-2.7b",
+    "blip2_6_7b": "Salesforce_blip2-opt-6.7b",
+}
+
+# 旧 CLI / 脚本 id → 新 id（解析时统一，JSON 输出为新 id）
+_LEGACY_MODEL_ALIASES: dict[str, str] = {
+    "fast": "blip_base",
+    "balanced": "blip_large",
+    "detailed": "vit_gpt2",
+    "photo": "blip2_2_7b",
+    "git_large": "blip2_6_7b",
 }
 
 
@@ -46,45 +55,48 @@ def local_model_dir_for_spec(spec: CaptionModelSpec) -> Path:
 
 
 MODEL_SPECS = {
-    "fast": CaptionModelSpec(
-        key="fast",
-        label="快速",
+    "blip_base": CaptionModelSpec(
+        key="blip_base",
+        label="BLIP-B（快）",
         model_id="Salesforce/blip-image-captioning-base",
         capability="主体识别基础稳定，适合快速初筛。",
         speed="CPU 下通常 2-4 秒/张。",
     ),
-    "balanced": CaptionModelSpec(
-        key="balanced",
-        label="平衡",
+    "blip_large": CaptionModelSpec(
+        key="blip_large",
+        label="BLIP-L（较快）",
         model_id="Salesforce/blip-image-captioning-large",
         capability="主体和场景判断更稳，适合作为默认模型。",
         speed="CPU 下通常 3-8 秒/张。",
     ),
-    "detailed": CaptionModelSpec(
-        key="detailed",
-        label="细节",
+    "vit_gpt2": CaptionModelSpec(
+        key="vit_gpt2",
+        label="ViT-GPT2（中）",
         model_id="nlpconnect/vit-gpt2-image-captioning",
         capability="描述更开放，细节词更多，但偶尔会更发散。",
         speed="CPU 下通常 4-9 秒/张。",
     ),
-    "photo": CaptionModelSpec(
-        key="photo",
-        label="摄影",
+    "blip2_2_7b": CaptionModelSpec(
+        key="blip2_2_7b",
+        label="BLIP-2 2.7B（慢）",
         model_id="Salesforce/blip2-opt-2.7b",
-        capability="BLIP-2（OPT 2.7B），比传统 BLIP 更强，适合作为高质量补充；默认仍建议优先用平衡。",
-        speed="CPU 下通常 8-25 秒/张，下载与显存/内存占用明显高于平衡。",
+        capability="BLIP-2（OPT 2.7B），比传统 BLIP 更强，适合作为高质量补充；默认仍建议优先用 BLIP-L。",
+        speed="CPU 下通常 8-25 秒/张，下载与显存/内存占用明显高于 BLIP-L。",
         max_new_tokens=64,
     ),
-    "git_large": CaptionModelSpec(
-        key="git_large",
-        label="BLIP-2 大",
+    "blip2_6_7b": CaptionModelSpec(
+        key="blip2_6_7b",
+        label="BLIP-2 6.7B（超慢）",
         model_id="Salesforce/blip2-opt-6.7b",
-        capability="BLIP-2（OPT 6.7B），能力上限更高但更慢、更大；默认仍建议「平衡」作日常默认。",
+        capability="BLIP-2（OPT 6.7B），能力上限更高但更慢、更大；默认仍建议 BLIP-L 作日常默认。",
         speed="CPU 下通常 15-60 秒/张，首次下载体积大，建议 GPU。",
         max_new_tokens=64,
     ),
 }
-DEFAULT_MODEL_KEY = "balanced"
+DEFAULT_MODEL_KEY = "blip_large"
+
+# CLI --model 允许新 id 与旧 id（旧 id 仍会被规范为新 id 再解析）
+CLI_MODEL_CHOICES: tuple[str, ...] = tuple(sorted(set(MODEL_SPECS) | set(_LEGACY_MODEL_ALIASES)))
 
 
 class CaptioningError(RuntimeError):
@@ -92,11 +104,19 @@ class CaptioningError(RuntimeError):
 
 
 def available_caption_models() -> list[CaptionModelSpec]:
-    return [MODEL_SPECS[key] for key in ("fast", "balanced", "detailed", "photo", "git_large")]
+    return [
+        MODEL_SPECS[k]
+        for k in ("blip_base", "blip_large", "vit_gpt2", "blip2_2_7b", "blip2_6_7b")
+    ]
+
+
+def normalize_model_key(model_key: str | None) -> str:
+    raw = (model_key or DEFAULT_MODEL_KEY).strip().lower()
+    return _LEGACY_MODEL_ALIASES.get(raw, raw)
 
 
 def resolve_model_spec(model_key: str | None) -> CaptionModelSpec:
-    key = (model_key or DEFAULT_MODEL_KEY).strip().lower()
+    key = normalize_model_key(model_key)
     if key not in MODEL_SPECS:
         raise CaptioningError(f"未知模型预设：{key}")
     return MODEL_SPECS[key]

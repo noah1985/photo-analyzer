@@ -9,7 +9,12 @@ from pathlib import Path
 from random import Random
 from typing import Iterable
 
-from .captioning import DEFAULT_MODEL_KEY, available_caption_models, preload_caption_pipeline
+from .captioning import (
+    CLI_MODEL_CHOICES,
+    DEFAULT_MODEL_KEY,
+    available_caption_models,
+    preload_caption_pipeline,
+)
 from .core import (
     ANALYSIS_VERSION,
     TAG_GROUP_LABELS,
@@ -22,7 +27,7 @@ from .core import (
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tif"}
 DEFAULT_SAMPLE_COUNT = 100
 DEFAULT_SAMPLE_SEED = 20260421
-CAPTION_MODEL_CHOICES = [spec.key for spec in available_caption_models()]
+CAPTION_MODEL_CHOICES = list(CLI_MODEL_CHOICES)
 
 
 def build_parser() -> argparse.ArgumentParser:

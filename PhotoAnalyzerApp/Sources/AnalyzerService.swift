@@ -38,38 +38,38 @@ enum StreamEvent {
 }
 
 final class AnalyzerService {
-    static let bundledUIVersion = "1.2.1"
-    static let defaultModelKey = "balanced"
+    static let bundledUIVersion = "1.2.4"
+    static let defaultModelKey = "blip_large"
     static let availableModels: [CaptionModelOption] = [
         CaptionModelOption(
-            id: "fast",
-            title: "快速",
-            capability: "主体识别基础稳定，适合快速初筛。",
-            speed: "CPU 下通常 2-4 秒/张。"
+            id: "blip_base",
+            title: "BLIP-B（快）",
+            capability: "Salesforce BLIP-base，主体识别基础稳定，适合快速初筛。",
+            speed: "CPU 约 2–4 秒/张。"
         ),
         CaptionModelOption(
-            id: "balanced",
-            title: "平衡",
-            capability: "主体和场景判断更稳，推荐默认使用。",
-            speed: "CPU 下通常 3-8 秒/张。"
+            id: "blip_large",
+            title: "BLIP-L（较快）",
+            capability: "Salesforce BLIP-large，主体与场景更稳，推荐默认。",
+            speed: "CPU 约 3–8 秒/张。"
         ),
         CaptionModelOption(
-            id: "detailed",
-            title: "细节",
-            capability: "描述更开放，细节词更多，但有时更发散。",
-            speed: "CPU 下通常 4-9 秒/张。"
+            id: "vit_gpt2",
+            title: "ViT-GPT2（中）",
+            capability: "nlpconnect ViT-GPT2，描述更开放、细节词多，有时更发散。",
+            speed: "CPU 约 4–9 秒/张。"
         ),
         CaptionModelOption(
-            id: "photo",
-            title: "摄影",
-            capability: "BLIP-2（OPT 2.7B），比传统 BLIP 更强的高质量补充；默认仍建议优先使用平衡。",
-            speed: "CPU 下通常 8-25 秒/张，下载与内存占用更高。"
+            id: "blip2_2_7b",
+            title: "BLIP-2 2.7B（慢）",
+            capability: "Salesforce BLIP-2 OPT-2.7B，质量更高，下载与内存更大。",
+            speed: "CPU 约 8–25 秒/张。"
         ),
         CaptionModelOption(
-            id: "git_large",
-            title: "BLIP-2 大",
-            capability: "BLIP-2（OPT 6.7B），能力上限更高但更慢、更大；默认仍建议「平衡」。",
-            speed: "CPU 下通常 15-60 秒/张，首次下载大，建议 GPU。"
+            id: "blip2_6_7b",
+            title: "BLIP-2 6.7B（超慢）",
+            capability: "Salesforce BLIP-2 OPT-6.7B，能力上限高，体积与耗时最大。",
+            speed: "CPU 约 15–60 秒/张，建议 GPU。"
         ),
     ]
 
@@ -299,7 +299,7 @@ final class AnalyzerService {
                     analysisDurationSeconds: obj.analysisDurationSeconds,
                     tagGroups: obj.tagGroups,
                     tags: obj.tags,
-                    summary: obj.summary
+                    caption: obj.caption ?? ""
                 )
                 onEvent(.result(result))
             }

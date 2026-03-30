@@ -17,6 +17,7 @@ var/
 tmp_*.jsonl
 tmp_*.json
 .DS_Store
+**/.DS_Store
 
 # HF 权重体积大，由 scripts/vend_hf_models.py 填入；保留 models/hf/README.md
 models/hf/*

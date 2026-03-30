@@ -47,13 +47,15 @@ Layer 3 – Selection：按分值降序、组内 max_tags 上限、conflicts 互
 
 | key | HF repo | 定位 |
 | --- | --- | --- |
-| `fast` | `Salesforce/blip-image-captioning-base` | 快速初筛 |
-| `balanced` | `Salesforce/blip-image-captioning-large` | **默认主力** |
-| `detailed` | `nlpconnect/vit-gpt2-image-captioning` | 自由描述更开放 |
-| `photo` | `Salesforce/blip2-opt-2.7b` | BLIP-2，高质量补充 |
-| `git_large` | `Salesforce/blip2-opt-6.7b` | BLIP-2 更大解码器，能力上限最高，CPU 下很慢 |
+| `blip_base` | `Salesforce/blip-image-captioning-base` | 快速初筛 |
+| `blip_large` | `Salesforce/blip-image-captioning-large` | **默认主力** |
+| `vit_gpt2` | `nlpconnect/vit-gpt2-image-captioning` | 自由描述更开放 |
+| `blip2_2_7b` | `Salesforce/blip2-opt-2.7b` | BLIP-2，高质量补充 |
+| `blip2_6_7b` | `Salesforce/blip2-opt-6.7b` | BLIP-2 更大解码器，能力上限最高，CPU 下很慢 |
 
-推荐顺序：`balanced` → `photo` → `git_large` → `fast` → `detailed`。
+旧 id（`fast`、`balanced`、`detailed`、`photo`、`git_large`）在 CLI 中仍可作为别名传入，解析后统一为上述新 id。
+
+推荐顺序：`blip_large` → `blip2_2_7b` → `blip2_6_7b` → `blip_base` → `vit_gpt2`。
 
 运行时只从 `models/hf/` 加载，不联网下载。首次拉取：`python3 scripts/vend_hf_models.py`（详见 `models/hf/README.md`）。
 
@@ -71,7 +73,7 @@ Layer 3 – Selection：按分值降序、组内 max_tags 上限、conflicts 互
 `scripts/run_eval_five_rounds_random.py` 提供多轮随机抽样评测：
 
 ```bash
-PYTHONPATH=. python3 scripts/run_eval_five_rounds_random.py --rounds 10 --model fast
+PYTHONPATH=. python3 scripts/run_eval_five_rounds_random.py --rounds 10 --model blip_base
 ```
 
 - 图集目录：默认 `/Users/Noah/Pictures/分享输出`，可用 `--root` 或 `PHOTO_ANALYZER_IMAGE_ROOT` 覆盖

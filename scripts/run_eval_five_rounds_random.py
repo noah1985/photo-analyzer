@@ -4,7 +4,7 @@
 
 用法（项目根目录）：
   PYTHONPATH=. python3 scripts/run_eval_five_rounds_random.py
-  PYTHONPATH=. python3 scripts/run_eval_five_rounds_random.py --rounds 10 --model fast --root /path/to/photos
+  PYTHONPATH=. python3 scripts/run_eval_five_rounds_random.py --rounds 10 --model blip_base --root /path/to/photos
 
 环境变量 PHOTO_ANALYZER_IMAGE_ROOT 可覆盖默认图集根目录。
 """
@@ -88,7 +88,7 @@ def _write_round_notes(
 
 
 def main() -> None:
-    from photo_analyzer.captioning import MODEL_SPECS
+    from photo_analyzer.captioning import CLI_MODEL_CHOICES
 
     parser = argparse.ArgumentParser(description="多轮随机抽样 caption 评测")
     parser.add_argument(
@@ -109,9 +109,9 @@ def main() -> None:
     parser.add_argument(
         "--model",
         type=str,
-        default="git_large",
-        choices=sorted(MODEL_SPECS.keys()),
-        help="caption 模型预设（最快为 fast）",
+        default="blip2_6_7b",
+        choices=sorted(CLI_MODEL_CHOICES),
+        help="caption 模型预设（最快为 blip_base）",
     )
     args = parser.parse_args()
 

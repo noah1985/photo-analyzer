@@ -117,6 +117,11 @@ class TestScoringAndSelection(unittest.TestCase):
         scores = score_all_tags(taxonomy, _quick_signals("two women holding up a lighted object"))
         self.assertGreater(scores.get("人像", 0), 0)
 
+    def test_flowers_caption_scores_landscape(self) -> None:
+        taxonomy = load_taxonomy()
+        scores = score_all_tags(taxonomy, _quick_signals("pink flowers in the garden"))
+        self.assertGreater(scores.get("风光", 0), 0)
+
     def test_conflict_indoor_outdoor(self) -> None:
         taxonomy = load_taxonomy()
         tag_groups = select_tags({"室内": 1.0, "室外": 0.8}, taxonomy)

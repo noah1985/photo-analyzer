@@ -13,8 +13,9 @@
       "group": "subject_content",
       "enabled": true,
       "rules": [
-        { "type": "token_any",  "tokens": ["portrait", "person", "people", "man", "men", "woman", "women", "girl", "girls", "boy", "boys", "child", "children", "kid", "kids", "baby", "toddler", "face", "faces", "couple", "couples", "bride", "groom", "selfie", "ladies", "gentleman", "gentlemen", "friends"], "score": 1.0 },
-        { "type": "phrase_any",  "phrases": ["looking at camera", "posing for", "self portrait", "model posing", "two women", "two men", "group of people"], "score": 0.9 }
+        { "type": "token_any",  "tokens": ["portrait", "selfie", "headshot", "face", "faces", "bride", "groom", "model"], "score": 1.0 },
+        { "type": "phrase_any",  "phrases": ["looking at camera", "posing for", "self portrait", "model posing", "close portrait", "head and shoulders", "upper body portrait"], "score": 0.9 },
+        { "type": "token_any",  "tokens": ["person", "people", "man", "men", "woman", "women", "girl", "girls", "boy", "boys", "child", "children", "kid", "kids", "baby", "toddler", "couple", "couples", "friends"], "score": 0.45 }
       ],
       "conflicts": ["动物"]
     },
@@ -35,8 +36,8 @@
       "group": "subject_content",
       "enabled": true,
       "rules": [
-        { "type": "token_any",  "tokens": ["landscape", "mountain", "valley", "ocean", "sea", "beach", "coast", "field", "meadow", "forest", "lake", "pond", "river", "waterfall", "sky", "clouds", "horizon", "nature", "scenic", "wildlife", "elephant", "elephants", "zebra", "giraffe", "rose", "roses", "botanical"], "score": 1.0 },
-        { "type": "phrase_any", "phrases": ["nature scene", "sunset over", "grassy field", "wooden walkway"], "score": 0.9 }
+        { "type": "token_any",  "tokens": ["landscape", "mountain", "valley", "ocean", "sea", "beach", "coast", "field", "meadow", "forest", "woods", "lake", "pond", "river", "stream", "waterfall", "water", "sky", "clouds", "horizon", "nature", "scenic", "sunrise", "sunset", "cliff", "trail", "shoreline", "tree", "trees", "leaf", "leaves"], "score": 1.0 },
+        { "type": "phrase_any", "phrases": ["nature scene", "sunset over", "grassy field", "wooden walkway", "wide landscape", "open landscape", "body of water", "very cloudy sky", "view of a city from a hill"], "score": 0.9 }
       ],
       "conflicts": []
     },
@@ -46,8 +47,19 @@
       "group": "subject_content",
       "enabled": true,
       "rules": [
-        { "type": "token_any",  "tokens": ["food", "meal", "dish", "dinner", "lunch", "breakfast", "pizza", "sushi", "cake", "dessert", "fruit", "tart", "pastry", "berries", "berry", "raspberry", "blueberry", "vegetables", "coffee", "wine", "noodles", "rice"], "score": 1.0 },
-        { "type": "phrase_any", "phrases": ["plate of", "bowl of", "cup of", "fruit tart"], "score": 0.8 }
+        { "type": "token_any",  "tokens": ["food", "meal", "dish", "dinner", "lunch", "breakfast", "pizza", "sushi", "cake", "dessert", "desserts", "fruit", "fruits", "salad", "tart", "pastry", "berries", "berry", "raspberry", "blueberry", "vegetables", "coffee", "wine", "noodles", "rice", "cream", "orange", "oranges"], "score": 1.0 },
+        { "type": "phrase_any", "phrases": ["plate of", "bowl of", "cup of", "fruit tart", "fruit salad", "tray of desserts", "plate of food"], "score": 0.85 }
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "subject_floral",
+      "label": "花卉",
+      "group": "subject_content",
+      "enabled": true,
+      "rules": [
+        { "type": "token_any",  "tokens": ["flower", "flowers", "blossom", "blossoms", "lotus", "magnolia", "tulip", "tulips", "rose", "roses", "petal", "petals", "floral"], "score": 1.0 },
+        { "type": "phrase_any", "phrases": ["bunch of flowers", "pink flower", "white lotus flower", "flower in bloom", "magnolia blossoms", "flower with water droplets", "close up of a flower", "close up of a lotus flower", "yellow flower", "purple flower", "three white flowers"], "score": 0.95 }
       ],
       "conflicts": []
     },
@@ -57,10 +69,10 @@
       "group": "subject_content",
       "enabled": true,
       "rules": [
-        { "type": "token_any",  "tokens": ["dog", "dogs", "puppy", "puppies", "cat", "cats", "kitten", "kittens", "pet", "pets", "animal", "animals", "wildlife", "bird", "birds", "insect", "insects", "ant", "ants", "beetle", "beetles", "wasp", "wasps", "hornet", "hornets", "bee", "bees", "moth", "moths", "mosquito", "mosquitoes", "dragonfly", "dragonflies", "butterfly", "butterflies", "caterpillar", "caterpillars", "grasshopper", "grasshoppers", "cricket", "crickets", "cicada", "cicadas", "ladybug", "ladybugs", "firefly", "fireflies", "spider", "spiders", "scorpion", "scorpions", "centipede", "worm", "worms", "slug", "slugs", "snail", "snails", "larva", "larvae", "fly", "flies", "eagle", "owls", "owl", "duck", "ducks", "goose", "swan", "flamingo", "parrot", "penguin", "hummingbird", "hummingbirds", "crow", "crows", "robin", "robins", "sparrow", "sparrows", "hawk", "hawks", "falcon", "falcons", "seagull", "seagulls", "pelican", "pelicans", "pigeon", "pigeons", "dove", "doves", "woodpecker", "woodpeckers", "kingfisher", "cardinal", "bluebird", "bluebirds", "heron", "herons", "stork", "storks", "crane", "cranes", "osprey", "vulture", "vultures", "deer", "moose", "elk", "horse", "horses", "cow", "cows", "bull", "sheep", "goat", "goats", "pig", "pigs", "rabbit", "rabbits", "squirrel", "fox", "wolf", "wolves", "bear", "bears", "lion", "lions", "tiger", "tigers", "leopard", "cheetah", "zebra", "zebras", "giraffe", "giraffes", "elephant", "elephants", "monkey", "monkeys", "gorilla", "panda", "koala", "camel", "llama", "alpaca", "zoo", "safari", "reptile", "snake", "turtle", "crocodile", "frog", "frogs", "cattle", "herd", "flock"], "score": 1.0 },
+        { "type": "token_any",  "tokens": ["dog", "dogs", "puppy", "puppies", "cat", "cats", "kitten", "kittens", "pet", "pets", "animal", "animals", "bird", "birds", "insect", "insects", "ant", "ants", "beetle", "beetles", "wasp", "wasps", "hornet", "hornets", "bee", "bees", "moth", "moths", "mosquito", "mosquitoes", "dragonfly", "dragonflies", "butterfly", "butterflies", "caterpillar", "caterpillars", "grasshopper", "grasshoppers", "cricket", "crickets", "cicada", "cicadas", "ladybug", "ladybugs", "firefly", "fireflies", "spider", "spiders", "scorpion", "scorpions", "centipede", "worm", "worms", "slug", "slugs", "snail", "snails", "larva", "larvae", "fly", "flies", "eagle", "owls", "owl", "duck", "ducks", "goose", "swan", "flamingo", "parrot", "penguin", "hummingbird", "hummingbirds", "crow", "crows", "robin", "robins", "sparrow", "sparrows", "hawk", "hawks", "falcon", "falcons", "seagull", "seagulls", "pelican", "pelicans", "pigeon", "pigeons", "dove", "doves", "woodpecker", "woodpeckers", "kingfisher", "cardinal", "bluebird", "bluebirds", "heron", "herons", "stork", "storks", "crane", "cranes", "osprey", "vulture", "vultures", "deer", "moose", "elk", "horse", "horses", "cow", "cows", "bull", "sheep", "goat", "goats", "pig", "pigs", "rabbit", "rabbits", "squirrel", "fox", "wolf", "wolves", "bear", "bears", "lion", "lions", "tiger", "tigers", "leopard", "cheetah", "zebra", "zebras", "giraffe", "giraffes", "elephant", "elephants", "monkey", "monkeys", "gorilla", "panda", "koala", "camel", "llama", "alpaca", "zoo", "safari", "reptile", "snake", "turtle", "crocodile", "frog", "frogs", "cattle", "herd", "flock"], "score": 1.0 },
         { "type": "phrase_any",  "phrases": ["wild animal", "farm animal", "sea lion", "baby elephant", "group of birds", "close up of a bee", "close up of a butterfly"], "score": 0.9 }
       ],
-      "conflicts": []
+      "conflicts": ["人像"]
     },
     {
       "id": "subject_sports",
@@ -68,8 +80,8 @@
       "group": "subject_content",
       "enabled": true,
       "rules": [
-        { "type": "token_any",  "tokens": ["sport", "sports", "soccer", "football", "basketball", "tennis", "running", "runner", "swimming", "cyclist", "cycling", "skiing", "surfing", "marathon", "athlete", "stadium", "racing", "kart"], "score": 1.0 },
-        { "type": "phrase_any", "phrases": ["go kart", "racing gear"], "score": 0.9 }
+        { "type": "token_any",  "tokens": ["sport", "sports", "soccer", "football", "basketball", "tennis", "running", "runner", "swimmer", "swimmers", "cyclist", "cycling", "skiing", "surfing", "marathon", "athlete", "stadium", "racing", "race", "helmet", "jersey", "goal", "court", "track", "motorcycle racing", "go kart", "kart"], "score": 1.0 },
+        { "type": "phrase_any", "phrases": ["go kart", "racing gear", "in a race", "playing football", "holding a football"], "score": 0.9 }
       ],
       "conflicts": []
     },
@@ -79,8 +91,8 @@
       "group": "scene_lighting",
       "enabled": true,
       "rules": [
-        { "type": "token_any",  "tokens": ["indoor", "indoors", "inside", "room", "kitchen", "bedroom", "studio", "interior", "table", "chair", "mirror", "floor"], "score": 1.0 },
-        { "type": "phrase_any", "phrases": ["living room", "coffee shop"], "score": 0.9 }
+        { "type": "token_any",  "tokens": ["indoor", "indoors", "inside", "room", "kitchen", "bedroom", "studio", "interior", "hallway", "window"], "score": 1.0 },
+        { "type": "phrase_any", "phrases": ["living room", "coffee shop", "indoor scene", "window light"], "score": 0.9 }
       ],
       "conflicts": ["室外"]
     },
@@ -90,8 +102,8 @@
       "group": "scene_lighting",
       "enabled": true,
       "rules": [
-        { "type": "token_any",  "tokens": ["outdoor", "outdoors", "outside", "street", "park", "garden", "field", "beach", "sidewalk"], "score": 1.0 },
-        { "type": "phrase_any", "phrases": ["mountain trail", "walking down", "walking on"], "score": 0.8 }
+        { "type": "token_any",  "tokens": ["outdoor", "outdoors", "outside", "street", "park", "garden", "field", "beach", "sidewalk", "courtyard", "harbor", "dock", "lawn", "pond", "river"], "score": 1.0 },
+        { "type": "phrase_any", "phrases": ["mountain trail", "walking down", "walking on", "standing in a field"], "score": 0.8 }
       ],
       "conflicts": ["室内"]
     },
@@ -102,7 +114,7 @@
       "enabled": true,
       "rules": [
         { "type": "phrase_any", "phrases": ["at night", "night time", "nighttime", "night scene", "city lights", "dark sky", "moonlight"], "score": 1.0 },
-        { "type": "metric_lt",  "field": "brightness", "value": 30, "score": 0.6 }
+        { "type": "token_any",  "tokens": ["night", "moonlight"], "score": 0.9 }
       ],
       "conflicts": ["日落"]
     },
@@ -123,8 +135,8 @@
       "group": "scene_lighting",
       "enabled": true,
       "rules": [
-        { "type": "phrase_any", "phrases": ["low light", "dimly lit", "dark room", "shadowy"], "score": 1.0 },
-        { "type": "metric_lt",  "field": "brightness", "value": 38, "score": 0.5 }
+        { "type": "phrase_any", "phrases": ["low light", "dimly lit", "dark room", "shadowy", "dim interior", "moody lighting"], "score": 1.0 },
+        { "type": "metric_lt",  "field": "brightness", "value": 20, "score": 0.25 }
       ],
       "conflicts": []
     },
@@ -156,7 +168,7 @@
       "group": "composition_distance",
       "enabled": true,
       "rules": [
-        { "type": "phrase_any", "phrases": ["portrait shot", "head and shoulders", "waist up", "upper body"], "score": 1.0 }
+        { "type": "phrase_any", "phrases": ["portrait shot", "head and shoulders", "waist up", "upper body", "close view", "foreground subject", "cropped view"], "score": 1.0 }
       ],
       "conflicts": ["特写", "宽景"]
     },
@@ -166,8 +178,8 @@
       "group": "composition_distance",
       "enabled": true,
       "rules": [
-        { "type": "phrase_any", "phrases": ["wide shot", "wide angle", "panoramic", "aerial view", "vast landscape", "bird eye"], "score": 1.0 },
-        { "type": "metric_gt",  "field": "aspect_ratio", "value": 1.6, "score": 0.5 }
+        { "type": "phrase_any", "phrases": ["wide shot", "wide angle", "panoramic", "aerial view", "vast landscape", "bird eye", "view of a city", "city skyline", "view of the city from a rooftop"], "score": 1.0 },
+        { "type": "metric_gt",  "field": "aspect_ratio", "value": 2.1, "score": 0.25 }
       ],
       "conflicts": ["特写", "近景", "微距"]
     },
@@ -189,7 +201,7 @@
       "enabled": true,
       "rules": [
         { "type": "token_any",  "tokens": ["bokeh"], "score": 1.0 },
-        { "type": "phrase_any", "phrases": ["subject in focus", "shallow depth", "blurred background", "depth of field"], "score": 0.9 }
+        { "type": "phrase_any", "phrases": ["subject in focus", "shallow depth", "blurred background", "depth of field", "isolated subject", "single subject", "centered subject", "main subject", "clear subject"], "score": 0.9 }
       ],
       "conflicts": []
     },
@@ -202,7 +214,7 @@
         { "type": "token_any",  "tokens": ["macro"], "score": 1.0 },
         { "type": "phrase_any",  "phrases": ["close up of a flower", "close up of an insect", "close up of a leaf", "close up of a bee", "close up of a butterfly", "extreme close", "detail of", "super macro", "macro lens", "macro shot"], "score": 0.9 }
       ],
-      "conflicts": ["宽景"]
+      "conflicts": ["宽景", "特写"]
     },
 
     {
@@ -212,7 +224,7 @@
       "enabled": true,
       "rules": [
         { "type": "phrase_any", "phrases": ["warm tones", "warm colors", "warm light", "golden tones"], "score": 0.9 },
-        { "type": "metric_eq",  "field": "temperature", "value": "偏暖", "score": 0.6 }
+        { "type": "metric_eq",  "field": "temperature", "value": "偏暖", "score": 0.2 }
       ],
       "conflicts": ["冷色调"]
     },
@@ -223,7 +235,7 @@
       "enabled": true,
       "rules": [
         { "type": "phrase_any", "phrases": ["cool tones", "cool colors", "blue tones", "cold light"], "score": 0.9 },
-        { "type": "metric_eq",  "field": "temperature", "value": "偏冷", "score": 0.6 }
+        { "type": "metric_eq",  "field": "temperature", "value": "偏冷", "score": 0.2 }
       ],
       "conflicts": ["暖色调"]
     },
@@ -234,9 +246,9 @@
       "enabled": true,
       "rules": [
         { "type": "phrase_any", "phrases": ["black and white", "monochrome", "grayscale", "bw photo"], "score": 1.0 },
-        { "type": "metric_lt",  "field": "saturation", "value": 10, "score": 0.7 }
+        { "type": "metric_lt",  "field": "saturation", "value": 4, "score": 0.6 }
       ],
-      "conflicts": ["高饱和", "低饱和"]
+      "conflicts": ["高饱和", "低饱和", "暖色调", "冷色调"]
     },
     {
       "id": "style_hi_contrast",
@@ -244,8 +256,8 @@
       "group": "style_impression",
       "enabled": true,
       "rules": [
-        { "type": "phrase_any", "phrases": ["high contrast", "dramatic contrast", "strong shadows"], "score": 0.9 },
-        { "type": "metric_gt",  "field": "contrast", "value": 16, "score": 0.6 }
+        { "type": "phrase_any", "phrases": ["high contrast", "dramatic contrast", "strong shadows"], "score": 0.75 },
+        { "type": "metric_gt",  "field": "contrast", "value": 28, "score": 0.35 }
       ],
       "conflicts": ["低对比"]
     },
@@ -268,7 +280,7 @@
       "rules": [
         { "type": "phrase_any", "phrases": ["vivid colors", "vibrant colors"], "score": 0.9 },
         { "type": "token_any",  "tokens": ["saturated", "colorful", "vibrant"], "score": 0.8 },
-        { "type": "metric_gt",  "field": "saturation", "value": 42, "score": 0.5 }
+        { "type": "metric_gt",  "field": "saturation", "value": 55, "score": 0.35 }
       ],
       "conflicts": ["低饱和", "黑白"]
     },
@@ -280,7 +292,7 @@
       "rules": [
         { "type": "phrase_any", "phrases": ["muted colors", "desaturated", "pastel tones"], "score": 0.9 },
         { "type": "token_any",  "tokens": ["pastel"], "score": 0.7 },
-        { "type": "metric_lt",  "field": "saturation", "value": 22, "score": 0.5 }
+        { "type": "metric_lt",  "field": "saturation", "value": 14, "score": 0.35 }
       ],
       "conflicts": ["高饱和", "黑白"]
     },
@@ -292,7 +304,7 @@
       "rules": [
         { "type": "phrase_any", "phrases": ["well lit", "brightly lit", "high key"], "score": 0.9 },
         { "type": "token_any",  "tokens": ["bright"], "score": 0.7 },
-        { "type": "metric_gt",  "field": "brightness", "value": 62, "score": 0.5 }
+        { "type": "metric_gt",  "field": "brightness", "value": 72, "score": 0.35 }
       ],
       "conflicts": []
     }

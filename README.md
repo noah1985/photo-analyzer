@@ -1,21 +1,9 @@
 # Photo Analyzer
 
-本地图片分析工具，分成两条独立路径：
+本地图片分析工具，主要入口：
 
-- [local_gallery.html](local_gallery.html)：直接双击打开即可用的轻量本地页面
-- Python CLI：本地模型优先的图片分析入口，负责更强的离线分析能力
-
-## HTML 路径
-
-`local_gallery.html` 保持轻量前端规则分析：
-
-- 可以直接双击打开
-- 通过浏览器本地目录选择 API 读取 Python 产出的 `results.json`
-- 只按你输入的数量随机展示结果，最大 100 张
-- 展示图片缩略图、中文标签和中文总结
-- 不依赖模型下载、CDN 或 web service
-
-## Python 路径
+- **Python CLI**：本地模型优先的图片分析、抽样导出静态画廊
+- **macOS 桌面 App**（`PhotoAnalyzerApp`）：调用同一套 Python 分析逻辑
 
 Python 侧采用“本地图像描述模型 + 轻量视觉特征”的组合：
 
@@ -66,15 +54,15 @@ photo-analyzer analyze /path/to/image.jpg
 photo-analyzer analyze /path/to/photo-folder
 ```
 
-随机抽样并导出静态 HTML + JSON：
+随机抽样并导出静态 HTML + JSON（在输出目录用浏览器打开 `index.html` 即可浏览）：
 
 ```bash
-photo-analyzer sample-gallery /path/to/photo-folder --count 100 --seed 20260421
+photo-analyzer sample-gallery /path/to/photo-folder --count 100 --seed 20260421 --output-dir /path/to/export
 ```
 
-生成 `results.json` 后，可直接打开 [local_gallery.html](local_gallery.html) 并选择包含该文件的目录进行浏览。
+未指定 `--output-dir` 时，默认在当前目录生成 `sample_gallery_output/`。
 
-本地桌面入口仍保留：
+Swift 打包的桌面入口：
 
 ```bash
 photo-analyzer app
@@ -88,8 +76,8 @@ python3 -m photo_analyzer analyze /path/to/image.jpg
 
 ## 输出内容
 
-- HTML 版：图片缩略图 + 描述性标签
-- CLI 版：文件信息 + 基础指标 + caption + 标签 + 中文总结
+- `sample-gallery`：生成 `index.html` + `results.json`，缩略图与标签在页面中展示
+- CLI 直接分析：终端输出文件信息、基础指标、caption、标签、中文总结
 
 ## 标签配置
 

@@ -466,7 +466,7 @@ private struct PhotoCard: View {
             GroupedTagSection(title: "题材 / 内容", tags: result.tagGroups.subjectContent)
             GroupedTagSection(title: "场景 / 光线", tags: result.tagGroups.sceneLighting)
             GroupedTagSection(title: "构图 / 景别", tags: result.tagGroups.compositionDistance)
-            GroupedTagSection(title: "风格 / 观感", tags: result.tagGroups.styleImpression)
+            GroupedTagSection(title: "色调倾向", tags: result.tagGroups.styleImpression)
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)

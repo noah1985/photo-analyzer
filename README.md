@@ -95,12 +95,13 @@ python3 -m photo_analyzer analyze /path/to/image.jpg
 
 Python 分析链路的最终标签严格限制在 [photo_analyzer/taxonomy.json](photo_analyzer/taxonomy.json) 中。
 
-这份配置按四组组织：
+这份配置按四组组织（**仅**下列中文 `label`，勿在 taxonomy 中增加未列出项）：
 
-- `subject_content`：题材 / 内容
-- `scene_lighting`：场景 / 光线
-- `composition_distance`：构图 / 景别
-- `style_impression`：风格 / 观感
+- `subject_content`（题材 / 内容）：人像、建筑、风光、食物、动物、运动
+- `composition_distance`（构图 / 景别）：特写、近景、宽景、对称、主体突出、**微距**（可与题材「动物」等同时出现；每组仍最多 2 个标签）
+- `scene_lighting`（场景 / 光线）：室内、室外、夜景、日落、低光、逆光
+- `composition_distance`（构图 / 景别）：特写、近景、宽景、对称、主体突出
+- `style_impression`（色调倾向）：暖色调、冷色调、黑白、高对比、低对比、高饱和、低饱和、明亮
 
 每组最多输出 2 个标签，允许为空。
 
@@ -114,7 +115,7 @@ Python 分析链路的最终标签严格限制在 [photo_analyzer/taxonomy.json]
 - `metric_rules`
 - `summary_priority`
 
-后续新增标签时，只需要在 `taxonomy.json` 里追加新标签项；禁用标签时把 `enabled` 改成 `false` 即可。改完后运行测试验证：
+若需调整识别规则，可在既有 `label` 上改 `trigger_terms` / `metric_rules`，或把某项 `enabled` 设为 `false`；**不要**增加上表以外的 `label`。改完后运行测试验证：
 
 ```bash
 python3 -m unittest discover -s tests -v

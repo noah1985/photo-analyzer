@@ -38,8 +38,7 @@ Python 侧采用“本地图像描述模型 + 轻量视觉特征”的组合：
 
 - 早期尝试过 `SmolVLM` 等小型多模态指令模型，但当前已经停止作为主实现
 - 当前主链路已经收敛为：`caption -> taxonomy 映射 -> 4 组标签 -> 中文总结`
-- 更完整的模型说明见 [technical_notes/MODELS.md](technical_notes/MODELS.md)
-- 其它文档索引（发布说明、运维、评测流程等）：[docs/README.md](docs/README.md)
+- 技术说明（架构、模型、评测）：[technical_notes/README.md](technical_notes/README.md)
 
 若本地图像描述模型不可用，CLI 会自动退回纯规则标签，不会整次分析失败。
 
